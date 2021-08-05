@@ -1,353 +1,99 @@
-cpa_config = {
-    'fees': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': 'Fee',
-                'Symbol': '-feeCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-feePrice',
-                'Value': '-feeTotal',
-                'Quantity': '-feeQuantity',
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Liabilities',
-                'Sub Account': 'Fees Paid',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-feeCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-feePrice',
-                'Value': '-feeTotal',
-                'Quantity': '-feeQuantity',
-            }
-        ]
-    },
-    'deposit': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Equities',
-                'Sub Account': 'Invested Capital',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity',
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cash',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity',
-            }
-        ]
-    },
-    'withdrawal': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cash',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity',
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Equities',
-                'Sub Account': 'Withdrawn Capital',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity',
-            }
-        ]
-    },
-    'buy': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-quoteCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-quoteUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-quoteQuantity'
-                # 'Taxable' : False, Need to think about this, it is taxable unless the payment is made in USD. That is, we will recognize a gain or loss on any other quote currency.
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity'
-                # 'Taxable' : False, Need to think about this, it is taxable unless the payment is made in USD. That is, we will recognize a gain or loss on any other quote currency.
-            }
-        ]
-    },
-    'sell': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-closePosition',
-                'Value': '-closeValue',
-                'Quantity': '-closeQuantity',
-                'Taxable': True,
-            },
-            {
-                'Account': 'Equities',
-                'Sub Account': 'Realized Gains / Losses',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-closePosition',
-                'Value': '-closeGain',
-                'Quantity': '-closeQuantity',
-                'Taxable': True,
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-quoteCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-quoteUsdPrice',
-                'Value': '-closeTotal',
-                'Quantity': '-closeQuoteQuantity',
-                'Taxable': True,
-            }            
-        ]
-    },
-    'send': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity',
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Equities',
-                'Sub Account': 'Transfers Out',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity',
-            }
-        ]
-    },
-    'receive': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Equities',
-                'Sub Account': 'Transfers In',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity',
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity',
-            }
-        ]
-    },
-    'reward': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Equities',
-                'Sub Account': 'Rewards',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity'
-                # 'Taxable' : False, This could be true if we report it as taxable income.
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity'
-                # 'Taxable' : False, This could be true if we report it as taxable income.
-            }
-        ]
-    },
-    'interest-in-stake': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Equities',
-                'Sub Account': 'Interest Earned - Staking',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity'
-                # 'Taxable' : False, This could be true if we report it as taxable income.
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity'
-                # 'Taxable' : False, This could be true if we report it as taxable income.
-            }
-        ]
-    },
-    'interest-in-account': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Equities',
-                'Sub Account': 'Interest Earned',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity'
-                # 'Taxable' : False, This could be true if we report it as taxable income.
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity'
-                # 'Taxable' : False, This could be true if we report it as taxable income.
-            }
-        ]
-    },
-    'interest-in': {
-        'credits': [
-            {
-                'ID': '-id',
-                'Account': 'Equities',
-                'Sub Account': 'Interest Earned',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity'
-                # 'Taxable' : False, This could be true if we report it as taxable income.
-            }
-        ],
-        'debits': [
-            {
-                'ID': '-id',
-                'Account': 'Assets',
-                'Sub Account': 'Cryptocurrencies',
-                'Connection ID': '-connectionId',
-                'Type': '-type',
-                'Symbol': '-baseCurrency',
-                'Timestamp': '-timestamp',
-                'Position': '-baseUsdPrice',
-                'Value': '-subTotal',
-                'Quantity': '-baseQuantity'
-                # 'Taxable' : False, This could be true if we report it as taxable income.
-            }
-        ]
-    }
-}
+id = '-id'
+connection_id = '-connectionId'
+tx_type = '-tx_type'
+timestamp = '-timestamp'
+value = '-subTotal'
 
+asset_account = 'Assets'
+equity_account = 'Equities'
+liabilities = 'Liabilities'
+crypto_account = 'Cryptocurrencies'
+cash_account = 'Cash'
+
+
+def entry_config_factory(acct, sub_acct, side, **kwargs):
+    mkt = kwargs.get("mkt", "base")
+    base_config = {
+        'id': kwargs.get("id", id),
+        'account': acct,
+        'sub_account': sub_acct,
+        'tx_type': kwargs.get("tx_type", tx_type),
+        'timestamp': kwargs.get("timestamp", timestamp),
+        'taxable': kwargs.get("taxable", False),
+        'symbol': kwargs.get("symbol", '-{}Currency'.format(mkt)),
+        'position': kwargs.get("position", '-{}UsdPrice'.format(mkt)),
+        '{}_value'.format(side): kwargs.get("value", '{}'.format(value)),
+        '{}_quantity'.format(side): kwargs.get('quantity', '-{}Quantity'.format(mkt)),
+    }
+    return base_config
+
+
+deposit = [
+    entry_config_factory(asset_account, cash_account, "debit"),
+    entry_config_factory(equity_account, 'Invested Capital', "credit"),
+]
+
+withdrawal = [
+    entry_config_factory(equity_account, 'Withdrawn Capital', "debit"),
+    entry_config_factory(asset_account, cash_account, "credit"),
+]
+
+fee = [
+    entry_config_factory(liabilities, 'Fees Paid', "debit", mkt="fee", tx_type="fees"),
+    entry_config_factory(asset_account, crypto_account, "credit", mkt="fee", tx_type="fees"),
+]
+
+buy = [
+    entry_config_factory(asset_account, crypto_account, "debit"),
+    entry_config_factory(asset_account, crypto_account, "credit", mkt="quote"),
+]
+
+sell = [
+    entry_config_factory(asset_account, crypto_account, "debit", mkt="quote",
+                         value="-closeTotal", quantity="-closeQuoteQuantity", taxable=True),
+    entry_config_factory(asset_account, crypto_account, "credit", position="-closePosition",
+                         value="-closeValue", quantity="-closeQuantity", taxable=True),
+]
+
+realized_gains = [
+    entry_config_factory(equity_account, "Realized Gains / Losses", "credit",
+                         position="-closePosition", value="-closeGain", quantity="-closeQuantity", taxable=True)
+]
+
+send = [
+    entry_config_factory(equity_account, 'Transfers Out', "debit"),
+    entry_config_factory(asset_account, crypto_account, "credit"),
+]
+
+receive = [
+    entry_config_factory(asset_account, crypto_account, "debit"),
+    entry_config_factory(equity_account, 'Transfers In', "credit"),
+]
+
+reward = [
+    entry_config_factory(asset_account, crypto_account, "debit"),
+    entry_config_factory(equity_account, 'Rewards', "credit"),
+]
+
+interest_in_account = [
+    entry_config_factory(asset_account, crypto_account, "debit"),
+    entry_config_factory(equity_account, 'Interest Earned Account', "credit"),
+]
+
+interest_in_stake = [
+    entry_config_factory(asset_account, crypto_account, "debit"),
+    entry_config_factory(equity_account, 'Interest Earned Stake', "credit"),
+]
+
+cpa_config = {
+    'fees': fee,
+    'deposit': deposit,
+    'withdrawal': withdrawal,
+    'buy': buy,
+    'sell': sell + realized_gains,
+    'send': send,
+    'receive': receive,
+    'reward': reward,
+    'interest-in-stake': interest_in_stake,
+    'interest-in-account': interest_in_account,
+}

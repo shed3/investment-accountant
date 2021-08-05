@@ -8,10 +8,11 @@ An account represents a single account for tracking transactions. Transactions m
     cash.inc(125.99, 125.99, 'Sell, 'Coinbase', datetime.datetime.now()) 
     cash.dec(40, 40, 'Buy, 'Coinbase', datetime.datetime.now()) 
 """
-
+import re
 import logging
 import pandas as pd
 import numpy as np
+from .utils import is_row_valid
 
 log = logging.getLogger(__name__)
 
@@ -30,51 +31,56 @@ class Ledger:
 
     def __init__(self) -> None:
 
-        self.credits = []
+        self.entries = []
         self.debits = []
         self.processed = False
 
     @property
     def raw_ledger(self):
-        if len(self.debits) > 0 and len(self.credits) > 0:
-            df = pd.merge(self.credits_df, self.debits_df, 'outer')
-            return df.fillna(0)
-        elif len(self.debits) > 0:
-            return self.debits_df
-        elif len(self.credits) > 0:
-            return self.credits_df
+        """All transactions grouped by timestamp, type, and symbol. Useful for looking at all journal entries in order. Base ledger for every other operation.
+
+        Returns:
+            DataFrame: DataFrame with index ['timestamp', 'id']
+        """
+        if len(self.entries) > 0:
+            return pd.DataFrame(self.entries)
+        return pd.DataFrame()
+
+        # rename columns even if empty.
+
 
     @property
     def ledger(self):
         """All transactions grouped by timestamp, type, and symbol. Useful for looking at all journal entries in order. Base ledger for every other operation.
 
         Returns:
-            DataFrame: DataFrame with index ['Timestamp', 'ID']
+            DataFrame: DataFrame with index ['timestamp', 'id']
         """
-        if self.processed:
-            return self.set_ledger_index()
-        else:
-            return pd.DataFrame(self.raw_ledger)
+        return self.set_ledger_index(['timestamp', 'id'], True)
 
+
+
+    
     @property
     def accounts_ledger(self):
         """All transactions broken down to sub account. Useful for looking at all journal entries in order for specific accounts.
 
         Returns:
-            DataFrame: DataFrame with index ['Account', 'Sub Account', 'Timestamp', 'Type', 'Symbol']
+            DataFrame: DataFrame with index ['account', 'sub_account', 'timestamp', 'type', 'symbol']
         """
         return self.set_ledger_index(
-            ['Account', 'Sub Account', 'Timestamp', 'Type', 'Symbol'])
+            ['account', 'sub_account', 'timestamp', 'type', 'symbol'])
 
     @property
     def positions_ledger(self):
-        """The most granular breakdown of transactions. Note, can be very long due to interest.
+        """ NOT CURRENTLY USING
+        The most granular breakdown of transactions. Note, can be very long due to interest.
 
         Returns:
-            DataFrame: DataFrame with index ['Account', 'Sub Account', 'Connection ID',  'Symbol', 'Timestamp', 'Position']
+            DataFrame: DataFrame with index ['Account', 'Sub Account',  'Symbol', 'Timestamp', 'Position']
         """
         return self.set_ledger_index(
-            ['Account', 'Sub Account', 'Connection ID',  'Symbol', 'Timestamp', 'Position', "ID"])
+            ['account', 'sub_account', 'symbol', 'timestamp', 'position', "id"])
 
     @property
     def symbols(self):
@@ -83,39 +89,54 @@ class Ledger:
         Returns:
             list: A list containing the capitalized symbols.
         """
-        return np.unique(np.array(self.ledger['Symbol'].tolist()))
+        return np.unique(np.array(self.ledger['symbol'].tolist()))
 
     @property
-    def debits_df(self):
-        return pd.DataFrame(self.debits).rename(columns={'Value': 'Debits', 'Quantity': 'Debits - Quantity'})
+    def debit_value_sum(self):
+        summary = self.summarize_ledger()
+        return summary['debit_value'].sum()
 
     @property
-    def credits_df(self):
-        return pd.DataFrame(self.credits).rename(columns={'Value': 'Credits', 'Quantity': 'Credits - Quantity'})
+    def debit_quantity_sum(self):
+        summary = self.summarize_ledger()
+        return summary['debit_quantity'].sum()
+    
+    @property
+    def credit_value_sum(self):
+        summary = self.summarize_ledger()
+        return summary['credit_value'].sum()
+    
+    @property
+    def credit_quantity_sum(self):
+        summary = self.summarize_ledger()
+        return summary['credit_quantity'].sum()
+    
+    def add_entry(self, entry):
+        entry["incomplete"] = not is_row_valid(entry)
+        self.entries.append(entry)
 
-    def debit(self, **kwargs):
-        # trans = {**kwargs}
-        self.debits.append(kwargs)
-
-    def credit(self, kwargs):
-        trans = {**kwargs}
-        self.credits.append(trans)
-
-    def find_entries(self, query):
+    def find_entries(self, query, regex=True):
         # Need to test
+        if regex:
+            return self.positions_ledger.filter(regex=query, axis=0)
         return self.positions_ledger.filter(like=query, axis=0)
 
-    def set_ledger_index(self, index=['Timestamp', 'ID']):
+    def set_ledger_index(self, index=['timestamp', 'id'], fill=False):
+        ledger = self.raw_ledger
+        if fill:
+            ledger.fillna(0, inplace=True)
         ledger = self.raw_ledger.set_index(index)
         return ledger.sort_index()
 
-    def summarize_ledger(self, index=['Account', 'Sub Account']):
-        ledger = self.set_ledger_index(index)
-        ledger = ledger.sort_index()
-        ledger = ledger.groupby(index).sum(numeric_only=True)
+    def summarize_ledger(self, index=['account', 'sub_account']):
+        ledger = self.set_ledger_index(index, fill=True)
+        regex = '(-\w+)'
+        ledger = ledger.replace(value=0, regex=regex)
+        ledger = ledger.groupby(level=[0,1]).sum(numeric_only=False)
+        # Need to remove ugly columns here
         return ledger
 
     def merge(self, ledgers):
-        for ledger in ledgers:
-            self.credits.append(ledger['credits'])
-            self.debits.append(ledger['debits'])
+        for l in ledgers:
+            for e in l.entries:
+                self.add_entry(e)
