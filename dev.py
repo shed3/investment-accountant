@@ -3,8 +3,8 @@ import logging
 import pandas as pd
 
 from src.crypto_accountant.transaction import Transaction
-from src.crypto_accountant.base_account import BaseAccount
-from src.crypto_accountant.bookkeeper_new import BookKeeper
+from src.crypto_accountant.account import Account
+from src.crypto_accountant.bookkeeper import BookKeeper
 from tests.fixtures import Fixes
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -17,11 +17,13 @@ pd.set_option("max_colwidth", 60)
 pd.set_option("display.max_columns", 10)
 
 txs = Fixes.test_sequence()
-bk = BookKeeper(txs)
-summary = bk.journal.summarize_ledger()
-bk.close_positions()
+bk = BookKeeper()
+bk.add_txs(txs)
+print(bk.accounts)
 
-print(summary)
+# acct = Account("Assets", "Inv", "Test")
+# acct.add_txs(txs)
+# print(acct.positions['btc'].unrealized_gain)
 
 
 # print(bk.journal.find_entries('^(-\w+)'))

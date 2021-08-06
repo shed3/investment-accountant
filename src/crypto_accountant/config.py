@@ -85,7 +85,7 @@ interest_in_stake = [
     entry_config_factory(equity_account, 'Interest Earned Stake', "credit"),
 ]
 
-cpa_config = {
+account_configs = {
     'fees': fee,
     'deposit': deposit,
     'withdrawal': withdrawal,

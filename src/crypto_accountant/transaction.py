@@ -38,6 +38,7 @@ class Transaction:
         self.quoteQuantity = set_decimal(kwargs.get("quoteQuantity", None))
         self.quoteUsdPrice = set_decimal(kwargs.get("quoteUsdPrice", None))
         self.subTotal = set_decimal(kwargs.get("subTotal", None))
+        self.taxable = kwargs.get("taxable", False)
 
     @property
     def to_dict(self):

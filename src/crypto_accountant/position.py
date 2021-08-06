@@ -7,7 +7,7 @@ class Position:
         self.symbol = symbol
         self._opens = {}
         self._closes = {}
-        self.stats = {}
+        self.stats = {'open': {}, 'close': {}}
         self.mkt_price = 0
 
     @property
@@ -35,34 +35,37 @@ class Position:
 
     @property
     def realized_gain(self):
-        return [lambda x: x['realized_gain'], self._closes.values()].sum()
+        return sum(list([(lambda x: x['realized_gain'])(x) for x in list(self._closes.values())]))
 
     @property
     def unrealized_gain(self):
-        return [lambda x: x['unrealized_gain'], self._opens.values()].sum()
+        return sum(list([(lambda x: x['unrealized_gain'])(x) for x in list(self._opens.values())]))
+
 
     def adjust_to_mtk(self, price, timestamp):
         self.mkt_price = price
         self.mkt_timestamp = timestamp
         for id in self._opens.keys():
-            self._opens[id]['unrealized_gain'] = self._opens[id]['available_quantity'] * price
+            self._opens[id]['unrealized_gain'] = self._opens[id]['available_qty'] * price
             if (timestamp  - self._opens[id]['timestamp']).days > 365:
                 self._opens[id]['term'] = 'long'
 
     def _update_stats(self, name, price, timestamp):
         entries = self._opens.values() if name == 'open' else self._closes.values()
-        self.stats[name]['avg'] = [lambda x: x['price'], entries].mean()
+        entries = list(entries)
+        prices = list([(lambda x: x['price'])(x) for x in entries])
+        self.stats[name]['avg'] = sum(prices) / len(entries)
         if price > self.stats[name].get('highest', 0):
             self.stats[name]['highest'] = price
         if price < self.stats[name].get('lowest', 999999999):
             self.stats[name]['lowest'] = price
-        if timestamp < self.stats[name].get('first_timestamp', datetime(year=3000)):
+        if timestamp < self.stats[name].get('first_timestamp', datetime(year=3000, month=1, day=1)):
             self.stats[name]['first_timestamp'] = timestamp
             self.stats[name]['first'] = price
-        if timestamp > self.stats[name].get('last_timestamp', datetime(year=1000)):
+        if timestamp > self.stats[name].get('last_timestamp', datetime(year=1000, month=1, day=1)):
             self.stats[name]['last_timestamp'] = timestamp
             self.stats[name]['last'] = price
-            self._update_unrealized_gain(price)
+            self.adjust_to_mtk(price, timestamp)
 
     def add(self, id, price, timestamp, qty):
         # add entry to opens and update open_stats
@@ -73,7 +76,7 @@ class Position:
             'unrealized_gain': 0,
             'term': 'short'
         }
-        self.update_stats('open', price, timestamp)
+        self._update_stats('open', price, timestamp)
 
     def close(self, id, price, timestamp, config):
         # add entry to closes and update close_stats
@@ -101,6 +104,6 @@ class Position:
             else:
                 raise Exception('No matching entry found for', id)
         
-        self.update_stats('close', price, timestamp)
+        self._update_stats('close', price, timestamp)
         
 
