@@ -6,16 +6,8 @@ Transaction Object used to represent a transaction and set its values in accorda
 Example:
 """
 
-
-import json
-import logging
-from datetime import datetime
-
+from .tx_config import tx_configs
 from .utils import set_decimal
-from .ledger import Ledger
-
-log = logging.getLogger(__name__)
-
 
 # ALL VALUES MUST BE DECIMALS
 class Transaction:
@@ -25,42 +17,59 @@ class Transaction:
         **kwargs
     ) -> None:
         self.timestamp = kwargs.get("timestamp", None)
-        self.tx_type = kwargs.get("tx_type", None)
+        self.type = kwargs.get("type", None)
         self.id = kwargs.get("id", None)
-        self.baseCurrency = kwargs.get("baseCurrency", None)
-        self.baseQuantity = set_decimal(kwargs.get("baseQuantity", None))
-        self.baseUsdPrice = set_decimal(kwargs.get("baseUsdPrice", None))
-        self.feeCurrency = kwargs.get("feeCurrency", None)
-        self.feeQuantity = set_decimal(kwargs.get("feeQuantity", None))
-        self.feeUsdPrice = set_decimal(kwargs.get("feeUsdPrice", None))
-        self.feeTotal = set_decimal(kwargs.get("feeTotal", None))
-        self.quoteCurrency = kwargs.get("quoteCurrency", None)
-        self.quoteQuantity = set_decimal(kwargs.get("quoteQuantity", None))
-        self.quoteUsdPrice = set_decimal(kwargs.get("quoteUsdPrice", None))
-        self.subTotal = set_decimal(kwargs.get("subTotal", None))
+        self.base_currency = kwargs.get("base_currency", None)
+        self.base_quantity = set_decimal(kwargs.get("base_quantity", None))
+        self.base_usd_price = set_decimal(kwargs.get("base_usd_price", None))
+        self.fee_currency = kwargs.get("fee_currency", None)
+        self.fee_quantity = set_decimal(kwargs.get("fee_quantity", None))
+        self.fee_usd_price = set_decimal(kwargs.get("fee_usd_price", None))
+        self.fee_total = set_decimal(kwargs.get("fee_total", None))
+        self.quote_currency = kwargs.get("quote_currency", None)
+        self.quote_quantity = set_decimal(kwargs.get("quote_quantity", None))
+        self.quote_usd_price = set_decimal(kwargs.get("quote_usd_price", None))
+        self.sub_total = set_decimal(kwargs.get("sub_total", None))
         self.taxable = kwargs.get("taxable", False)
+
 
     @property
     def to_dict(self):
-        """Base ledger entries associated with the transaction. Does not account for taxable transactions or gains.
-
-        Returns:
-            Ledger Object containing relevant entries.
-        """
         val = self.__dict__
         return val
+        
+    def get_entries(self, **kwargs):
+        entry_configs = kwargs.get("config", tx_configs[self.type]) 
+        fee_configs = kwargs.get("fee_config", tx_configs['fee']) 
+        
+        entries = list([self.create_entry(**config) for config in entry_configs])
+        if self.fee_quantity > 0:
+            # add fee entries to list of tx entries
+            fee_entries = list([self.create_entry(**config) for config in fee_configs])
+            entries += fee_entries
 
-# seed_config = {
-#     "timestamp": datetime(),
-#     "tx_type": "seed",
-#     "id": 0,
-#     "baseCurrency": "",
-#     "baseQuantity": 0,
-#     "baseUsdPrice": 0,
-#     "feeCurrency": "",
-#     "feeQuantity": 0,
-#     "feeUsdPrice": 0,
-#     "feeTotal": 0,
-#     "subTotal": 0,
-# }
-# SeedTransaction = Transaction(**seed_config)
+        self.entries = entries
+        return entries
+
+    def create_entry(self, **kwargs):
+        side = kwargs.get("side", 'credit')
+        mkt = kwargs.get("mkt", 'base')
+        tx_type = kwargs.get("type", self.type)
+        default_value = self.sub_total
+        default_quantity = getattr(self, '{}_quantity'.format(mkt))
+        if tx_type == "fee":
+            default_value = self.fee_total
+            default_quantity = self.fee_quantity
+        entry = {
+            'id': kwargs.get("id", self.id),
+            'account': kwargs.get("account", None),
+            'sub_account': kwargs.get("sub_account", None),
+            'type': tx_type,
+            'timestamp': kwargs.get("timestamp", self.timestamp),
+            'taxable': kwargs.get("taxable", self.taxable),
+            'symbol': kwargs.get("symbol", getattr(self, '{}_currency'.format(mkt))),
+            'quote': kwargs.get("quote", getattr(self, '{}_usd_price'.format(mkt))),
+            '{}_value'.format(side): kwargs.get("value", default_value),
+            '{}_quantity'.format(side): kwargs.get('quantity', default_quantity),
+        }
+        return entry

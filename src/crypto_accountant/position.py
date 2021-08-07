@@ -1,6 +1,6 @@
 
-from datetime import datetime, time
-
+from datetime import datetime
+from .utils import set_decimal
 class Position:
 
     def __init__(self, symbol) -> None:
@@ -23,11 +23,16 @@ class Position:
     @property
     def open_tax_lots(self):
         # sum opens available qtys
-        lots = list([lot for lot in self._opens if lot['available_qty'] > 0])
-        for lot in lots:
-            lot['qty'] = lot['available_qty']
-            del lot['available_qty']
-        return lots
+        lots = self._opens.copy()
+        open_lots = []
+        for id, lot in lots.items():
+            if lot['available_qty'] > 0:
+                new_lot = {**lot}
+                new_lot['id'] = id
+                new_lot['qty'] = new_lot['available_qty']
+                del new_lot['available_qty']
+                open_lots.append(new_lot)
+        return open_lots
 
     @property
     def days_open(self):
@@ -46,7 +51,7 @@ class Position:
         self.mkt_price = price
         self.mkt_timestamp = timestamp
         for id in self._opens.keys():
-            self._opens[id]['unrealized_gain'] = self._opens[id]['available_qty'] * price
+            self._opens[id]['unrealized_gain'] = self._opens[id]['available_qty'] * set_decimal(price)
             if (timestamp  - self._opens[id]['timestamp']).days > 365:
                 self._opens[id]['term'] = 'long'
 
@@ -69,23 +74,26 @@ class Position:
 
     def add(self, id, price, timestamp, qty):
         # add entry to opens and update open_stats
+        price = set_decimal(price)
+        qty = set_decimal(qty)
         self._opens[id] = {
             'timestamp': timestamp,
-            'price': price,
-            'available_qty': qty,
-            'unrealized_gain': 0,
+            'price': set_decimal(price),
+            'available_qty': set_decimal(qty),
+            'unrealized_gain': set_decimal(0),
             'term': 'short'
         }
         self._update_stats('open', price, timestamp)
 
     def close(self, id, price, timestamp, config):
         # add entry to closes and update close_stats
-        qty = config.values().sum()
+        price = set_decimal(price)
+        qty =  sum(list([set_decimal(x) for x in list(config.values())]))
         self._closes[id] = {
             'timestamp': timestamp,
             'price': price,
             'qty': qty,
-            'realized_gain': 0
+            'realized_gain': set_decimal(0)
         }
 
         # update available quantities
@@ -93,11 +101,11 @@ class Position:
         for config_id, config_qty in config.items():
             entry = self._opens.get(config_id, None)
             if entry:
-                close_qty = config_qty
+                close_qty = set_decimal(config_qty)
                 if entry['available_qty'] >= config_qty:
-                    self._opens[config_id]['available_qty'] -= config_qty
+                    self._opens[config_id]['available_qty'] -= close_qty
                 else:
-                    self._opens[config_id]['available_qty'] = 0
+                    self._opens[config_id]['available_qty'] = set_decimal(0)
                     close_qty = self._opens[config_id]['available_qty']
 
                 self._closes[id]['realized_gain'] += close_qty * price
