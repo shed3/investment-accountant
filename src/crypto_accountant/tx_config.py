@@ -1,25 +1,25 @@
 ### MAIN ACCOUNTS ###
-assets = {'account': 'Assets'}
-equities = {'account': 'Equities'}
-liabilities = {'account': 'Liabilities'}
+assets = {'account': 'assets'}
+equities = {'account': 'equities'}
+liabilities = {'account': 'liabilities'}
 
 ### SUB ACCOUNTS ###
-cash = {**assets, 'sub_account': 'Cash'}
-crypto = {**assets, 'sub_account': 'Cryptocurrencies'}
+cash = {**assets, 'sub_account': 'cash'}
+crypto = {**assets, 'sub_account': 'cryptocurrencies'}
 
-invested_capital = {**equities, 'sub_account': 'Invested Capital'}
-withdrawn_capital = {**equities, 'sub_account': 'Invested Capital'}
+invested_capital = {**equities, 'sub_account': 'invested_capital'}
+withdrawn_capital = {**equities, 'sub_account': 'invested_capital'}
 
-transfers_in = {**equities, 'sub_account': 'Transfers In'}
-transfers_out = {**equities, 'sub_account': 'Transfers Out'}
+transfers_in = {**equities, 'sub_account': 'transfers_in'}
+transfers_out = {**equities, 'sub_account': 'transfers_out'}
 
-interest_earned_account = {**equities, 'sub_account': 'Interest Earned Account'}
-interest_earned_stake = {**equities, 'sub_account': 'Interest Earned Stake'}
+interest_earned_account = {**equities, 'sub_account': 'interest_earned_account'}
+interest_earned_stake = {**equities, 'sub_account': 'interest_earned_stake'}
 
-rewards = {**equities, 'sub_account': 'Rewards'}
-realized_gain_loss = {**equities, 'sub_account': 'Realized Gains / Losses'}
+rewards = {**equities, 'sub_account': 'rewards'}
+realized_gain_loss = {**equities, 'sub_account': 'realized_gains_losses'}
 
-fees_paid = {**liabilities, 'sub_account': 'Fees Paid'}
+fees_paid = {**liabilities, 'sub_account': 'fees_paid'}
 
 
 ### TX DEFAULT ENTRY SCHEMA
