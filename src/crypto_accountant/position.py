@@ -11,9 +11,17 @@ class Position:
         self.mkt_price = 0
 
     @property
+    def balance(self):
+        # sum opens available qtys
+        debit_sum = sum(list([x['qty'] for x in self._opens.values()]))
+        credit_sum = sum(list([x['qty'] for x in self._closes.values()]))
+        print(debit_sum, credit_sum)
+        return debit_sum - credit_sum
+
+    @property
     def available_quantity(self):
         # sum opens available qtys
-        return [lambda x: x['available_qty'], self._opens.values()].sum()
+        return sum(list([x['available_qty'] for x in self._opens.values()]))
 
     @property
     def tax_lots(self):
@@ -79,6 +87,7 @@ class Position:
         self._opens[id] = {
             'timestamp': timestamp,
             'price': set_decimal(price),
+            'qty': set_decimal(qty),
             'available_qty': set_decimal(qty),
             'unrealized_gain': set_decimal(0),
             'term': 'short'

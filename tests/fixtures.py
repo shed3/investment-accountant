@@ -57,13 +57,23 @@ class Fixes:
         return txs
     
     def test_simple_buy_sell():
-        txs = []
         short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
         long_buy_date = randomtimestamp(start_year=2018, text=False)
         sell_date = randomtimestamp(start=short_buy_date, text=False)
         txs = [
-            txn_factory('buy', base_currency='btc', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=0),
-            txn_factory('sell', base_currency='btc', quote_currency='usd', timestamp=sell_date, base_usd_price=2500, quote_usd_price=1, quote_quantity=2500, taxable=True, base_quantity=1, fee_quantity=0)
+            txn_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=0),
+            txn_factory('sell', base_currency='btc', quote_currency='usd', timestamp=sell_date, base_usd_price=2000, quote_usd_price=1, quote_quantity=1000, taxable=True, base_quantity=.5, fee_quantity=0)
+        ]
+        return txs
+    
+    def test_simple_swap():
+        short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
+        long_buy_date = randomtimestamp(start_year=2018, text=False)
+        sell_date = randomtimestamp(start=short_buy_date, text=False)
+
+        txs = [
+            txn_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=.01),
+            txn_factory('swap', base_currency='eth', quote_currency='btc', timestamp=sell_date, base_usd_price=2000, quote_usd_price=10000, base_quantity=1, quote_quantity=.2, fee_quantity=.01, taxable=True),
         ]
         return txs
 

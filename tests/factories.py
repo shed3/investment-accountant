@@ -43,7 +43,7 @@ def txn_factory(tx_type, **kwargs):
         'total' : sub_total + fee_total,
         'taxable': kwargs.get("taxable", False)
     }
-    if tx_type == "buy" or tx_type == "sell":
+    if tx_type == "buy" or tx_type == "sell" or tx_type == "swap":
         quote_price = kwargs.get("quote_price", random.random() * 10)
         quote_usd_price = kwargs.get("quote_usd_price", random.random() * 100)
         quote_quantity = kwargs.get("quote_quantity", (quote_usd_price / base_usd_price) * base_quantity)

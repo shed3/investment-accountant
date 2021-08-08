@@ -41,24 +41,30 @@ interest_in_stake = create_general_schema('interest-in-stake', crypto, interest_
 
 reward = create_general_schema('reward', crypto, rewards)
 fee = create_general_schema('fee', fees_paid, cash)
-buy = create_general_schema('buy', crypto, crypto, c_kwargs={'mkt': 'quote'})
+buy = create_general_schema('buy', crypto, cash, c_kwargs={'mkt': 'quote'})
 
-sell_open = {'type': 'sell', 'side': "debit", 'mkt': 'quote', 'taxable': True, **crypto}
-sell_close = {'type': 'sell', 'side': "credit", 'taxable': True, **crypto}
-realized_gain = {'type': 'sell', 'side': "credit", 'taxable': True, **realized_gain_loss}
+sell = create_general_schema('sell', cash, crypto, d_kwargs={'mkt': 'quote'}, c_kwargs={'taxable': True})
 
-sell = [
-    sell_open,
-    sell_close,
-    realized_gain
-]
+# swap assumes exchanging quote_currency for base_currency
+swap = create_general_schema('swap', crypto, crypto, d_kwargs={'taxable': False}, c_kwargs={'mkt': 'quote', 'taxable': True})
+
+realized_gain = {'side': "credit", 'taxable': True, **realized_gain_loss}
+realized_gain_sell = {'type': 'sell', **realized_gain}
+realized_gain_swap = {'type': 'swap', 'mkt': 'quote', **realized_gain}
+# sell_open = {'type': 'sell', 'side': "debit", 'mkt': 'quote', 'taxable': True, **crypto}
+# sell_close = {'type': 'sell', 'side': "credit", 'taxable': True, **crypto}
+
+# realized_gain = {'type': 'sell', 'side': "credit", 'taxable': True, **realized_gain_loss}
+invested_capital_buy = {'type': 'buy', 'side': "debit", 'mkt': 'quote', **invested_capital}
 
 tx_configs = {
     'fee': fee,
     'deposit': deposit,
     'withdrawal': withdrawal,
+    # 'buy': buy + [invested_capital_buy],
     'buy': buy,
-    'sell': sell,
+    'sell': sell + [realized_gain_sell],
+    'swap': swap + [realized_gain_swap],
     'send': send,
     'receive': receive,
     'reward': reward,
