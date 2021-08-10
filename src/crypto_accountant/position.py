@@ -15,7 +15,6 @@ class Position:
         # sum opens available qtys
         debit_sum = sum(list([x['qty'] for x in self._opens.values()]))
         credit_sum = sum(list([x['qty'] for x in self._closes.values()]))
-        print(debit_sum, credit_sum)
         return debit_sum - credit_sum
 
     @property
@@ -68,14 +67,18 @@ class Position:
         entries = list(entries)
         prices = list([(lambda x: x['price'])(x) for x in entries])
         self.stats[name]['avg'] = sum(prices) / len(entries)
-        if price > self.stats[name].get('highest', 0):
+        highest = self.stats[name].get('highest', 0)
+        lowest = self.stats[name].get('lowest', 999999999)
+        first = self.stats[name].get('first_timestamp', datetime(year=3000, month=1, day=1))
+        last =self.stats[name].get('last_timestamp', datetime(year=1000, month=1, day=1))
+        if price > highest:
             self.stats[name]['highest'] = price
-        if price < self.stats[name].get('lowest', 999999999):
+        if price < lowest:
             self.stats[name]['lowest'] = price
-        if timestamp < self.stats[name].get('first_timestamp', datetime(year=3000, month=1, day=1)):
+        if timestamp < first:
             self.stats[name]['first_timestamp'] = timestamp
             self.stats[name]['first'] = price
-        if timestamp > self.stats[name].get('last_timestamp', datetime(year=1000, month=1, day=1)):
+        if timestamp > last:
             self.stats[name]['last_timestamp'] = timestamp
             self.stats[name]['last'] = price
             self.adjust_to_mtk(price, timestamp)

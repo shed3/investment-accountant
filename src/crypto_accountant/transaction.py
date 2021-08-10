@@ -37,6 +37,14 @@ class Transaction:
     def to_dict(self):
         val = self.__dict__
         return val
+
+    @property
+    def print(self):
+        val = list('{}: {}'.format(key, val) + '\n' for key, val in self.to_dict.items())
+        string = ''
+        for n in val:
+            string += (n)
+        return string
         
     def get_entries(self, **kwargs):
         entry_configs = kwargs.get("config", tx_configs[self.type]) 
