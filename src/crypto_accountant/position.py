@@ -15,7 +15,6 @@ class Position:
         # sum opens available qtys
         debit_sum = sum(list([x['qty'] for x in self._opens.values()]))
         credit_sum = sum(list([x['qty'] for x in self._closes.values()]))
-        print(debit_sum, credit_sum)
         return debit_sum - credit_sum
 
     @property

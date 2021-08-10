@@ -1,26 +1,21 @@
-"""
-Accountable TXs
+from .taxable import TaxableTx
+from .entry_config import CRYPTO, CASH
 
-The premise of an accountable transaction flips the responsibilty of knowledge regarding
-how a tx affects accounts from the book keeper to the txs themselves. This means that
-txs MUST understand how it would affect an account and be able to provide entries describing
-it's effect. It is also important that txs recognize which assets involved in the tx were
-incoming/outgoing and provide a simple interface for describing the credits and debits.
-This allows for tracking higher level positions outside the scope of a tx.
-"""
+debit_quote_entry = {'side': "debit", 'mkt': 'quote', **CASH}
+credit_base_entry = {'side': "credit", 'taxable': True, **CRYPTO}
+entry_template = {
+    'debit': debit_quote_entry,
+    'credit': credit_base_entry
+}
 
-from .base import BaseTx
-from .config import tx_configs
-
-# ALL VALUES MUST BE DECIMALS
-class Sell(BaseTx):
+class Sell(TaxableTx):
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(entry_template=entry_template, **kwargs)
         
-    def get_entries(self):
-        super.get_entries()
-        return self.create_entries(tx_configs['sell'], tx_configs['fee'])
+        # if base asset isnt stable add to taxable assets
+        if not self.assets['base'].is_fiat and not self.assets['base'].is_stable:
+            self.add_taxable_asset('base', entry_template)
 
     def get_affected_balances(self):
         affected_balances = {}
