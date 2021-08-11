@@ -40,11 +40,13 @@ class BookKeeper:
         else:
             return False                                                    
 
-    def add_txs(self, txs):
+    def add_txs(self, txs, auto_detect=True):
         transactions = []
         for tx in txs: 
-            tx['timestamp'] = tx['timestamp'].replace(tzinfo=utc)
-            tx = self.create_tx(**tx)
+            if auto_detect:
+                if isinstance(tx, dict):
+                    tx['timestamp'] = tx['timestamp'].replace(tzinfo=utc)
+                    tx = self.create_tx(**tx)
             if tx:
                 transactions.append(tx)
         transactions = sorted(transactions, key=lambda x: x.timestamp)
@@ -79,7 +81,13 @@ class BookKeeper:
 
     def process_taxable(self, tx):
         # add opening sell entry to entries list
-        entries = [tx.generate_debit_entry()]
+        entries = tx.generate_debit_entry()
+
+        # check if tx has fee and isnt taxable
+        if 'fee' not in tx.taxable_assets.keys():
+            # overwrite entries w/ tx entries using debit and inherited fee templates
+            entries = tx.get_entries(config={'debit': tx.entry_template['debit']})
+
         for taxable_asset in tx.taxable_assets.keys():
             # sort all open tax lots for tx's base currency position
             position = self.positions[tx.assets[taxable_asset].symbol]
@@ -90,12 +98,14 @@ class BookKeeper:
                     self.tax_rates[lot['term']]
             lots = sorted(open_lots, key=lambda x: x['tax_liability'], reverse=True)
 
+            tx_type = tx.type if taxable_asset != 'fee' else 'fee'
             # Loop through open tax lots (sorted by tax liability) until filled
             # At each tax lot, use fillable qty => all available qty or qty needed to fill order
             # Create credit entries from tx
             qty = tx.assets[taxable_asset].quantity
             filled_qty = 0  # tracks qty filled from open tax lots
             tax_lot_usage = {}
+
             while filled_qty < qty and len(lots) > 0:
                 current_lot = lots[0]
                 lot_available_qty = current_lot['qty']
@@ -108,10 +118,12 @@ class BookKeeper:
                 tax_lot_usage = {}
                 tax_lot_usage [current_lot['id']] = fillable_qty
                 position.close(tx.id, lot_price, tx.timestamp, tax_lot_usage)
-
-                closing_entries = tx.generate_credit_entries(taxable_asset, lot_price, fillable_qty)
+                
+                closing_entries = tx.generate_credit_entries(taxable_asset, lot_price, fillable_qty, type=tx_type)
+                
                 entries += closing_entries
                 filled_qty += fillable_qty
                 del lots[0]
+            
 
         return entries

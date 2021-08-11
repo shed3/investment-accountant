@@ -25,12 +25,12 @@ class Asset:
         qty,
         price,
     ) -> None:
-        self.symbol = symbol
+        self.symbol = symbol.lower()
         self.quantity = set_decimal(qty)
         self.usd_price = set_decimal(price)
         self.usd_value = self.quantity * self.usd_price
-        self.is_fiat = symbol == "usd"
-        self.is_stable = self.is_fiat or symbol in stable_coins
+        self.is_fiat = self.symbol == "usd"
+        self.is_stable = self.is_fiat or self.symbol in stable_coins
 
     @property
     def to_dict(self):

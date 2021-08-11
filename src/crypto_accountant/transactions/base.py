@@ -12,8 +12,8 @@ This allows for tracking higher level positions outside the scope of a tx.
 from .asset import Asset
 from .entry_config import FEES_PAID, CASH
 
-debit_fee_entry = {'side': "debit", **FEES_PAID}
-credit_fee_entry = {'side': "credit", 'mkt': 'fee', **CASH}
+debit_fee_entry = {'side': "debit", 'mkt': 'fee', **FEES_PAID}
+credit_fee_entry =  {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CASH}
 fee_config = {
     'debit': debit_fee_entry,
     'credit': credit_fee_entry
@@ -29,21 +29,21 @@ class BaseTx:
         **kwargs
     ) -> None:
         self.entry_template = entry_template
-        self.fee_entry_template = fee_entry_template
+        self.fee_entry_template = fee_entry_template.copy()
         self.id = kwargs.get("id", None)
         self.type = kwargs.get("type", None)
         self.taxable = kwargs.get("taxable", False)
         self.timestamp = kwargs.get("timestamp", None)
         self.assets = {
             'base': Asset(
-                kwargs.get("base_currency", kwargs.get("baseCurrency", "")),
-                kwargs.get("base_quantity", kwargs.get("baseQuantity", 0)),
-                kwargs.get("base_usd_price", kwargs.get("baseUsdPrice", 0)),
+                kwargs.get("base_currency", ""),
+                kwargs.get("base_quantity", 0),
+                kwargs.get("base_usd_price", 0),
             ),
             'quote': Asset(
-                kwargs.get("quote_currency", kwargs.get("quoteCurrency", "")),
-                kwargs.get("quote_quantity", kwargs.get("quoteQuantity", 0)),
-                kwargs.get("quote_usd_price", kwargs.get("quoteUsdPrice", 0)),
+                kwargs.get("quote_currency", ""),
+                kwargs.get("quote_quantity", 0),
+                kwargs.get("quote_usd_price", 0),
             ),
         }
         self.sub_total = self.assets['base'].usd_value + self.assets['quote'].usd_value
@@ -53,9 +53,9 @@ class BaseTx:
         fee_qty = kwargs.get("fee_quantity", 0)
         if fee_qty > 0:
             self.assets['fee'] = Asset(
-                kwargs.get("fee_currency", kwargs.get("fee_currency", "")),
-                kwargs.get("fee_quantity", kwargs.get("feeQuantity", 0)),
-                kwargs.get("fee_usd_price", kwargs.get("feeUsdPrice", 0)),
+                kwargs.get("fee_currency", ""),
+                kwargs.get("fee_quantity", 0),
+                kwargs.get("fee_usd_price", 0),
             )
             self.total += self.assets['fee'].usd_value
 
@@ -84,7 +84,7 @@ class BaseTx:
         if 'fee' in self.assets and self.assets['fee'].quantity > 0:
             if self.assets['fee'].is_fiat:
             # add fee entries to list of tx entries
-                fee_entries = list([self.create_entry(**{**config, 'type': 'fee', 'mkt': 'fee'}) for config in list(fee_configs.values())])
+                fee_entries = list([self.create_entry(**config) for config in list(fee_configs.values())])
                 entries += fee_entries
         self.entries = entries
         return entries

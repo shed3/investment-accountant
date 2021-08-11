@@ -2,8 +2,8 @@ from .base import BaseTx
 from .entry_config import CRYPTO, REALIZED_GAIN_LOSS, UNREALIZED_GAIN_LOSS, CRYPTO_FAIR_VALUE_ADJ
 
 # first, adjust to market and accrue unrealized gains.
-adj_fair_value = {'side': "debit", **CRYPTO_FAIR_VALUE_ADJ}
-adj_unrealized_gains = {'side': "credit", **UNREALIZED_GAIN_LOSS}
+adj_fair_value = {'side': "debit", 'type': 'adjust', 'quantity': 0, **CRYPTO_FAIR_VALUE_ADJ}
+adj_unrealized_gains = {'side': "credit", 'type': 'adjust', 'quantity': 0, **UNREALIZED_GAIN_LOSS}
 adj_to_fair_value_entries = [adj_fair_value, adj_unrealized_gains]
 
 
@@ -23,19 +23,18 @@ credit_fee_entry = {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CRYPTO}
 class TaxableTx(BaseTx):
     # Each taxable transaction entry should have the correct open quote, close quote, and current quote added. This will allow us to automatically derive gains, tax and (I think) equity curve
 
-    def __init__(self, adj_entries=adj_to_fair_value_entries, close_entries=close_credit_entries, gain_entries=close_gain_entries, fee_entries=credit_fee_entry, **kwargs) -> None:
+    def __init__(self, adj_entries=adj_to_fair_value_entries, close_entries=close_credit_entries, gain_entries=close_gain_entries, **kwargs) -> None:
         super().__init__(**kwargs)
         self.taxable_assets = {}
         self.adj_entries = adj_entries
         self.close_entries = close_entries
         self.gain_entries = gain_entries
-        self.fee_entries = fee_entries
         if 'fee' in self.assets.keys():
             if not self.assets['fee'].is_fiat and not self.assets['fee'].is_stable:
                 #  add fee to taxable assets and set credit entry to use crypto account
                 fee_entries = {
                     **self.fee_entry_template,
-                    'credit': self.fee_entries
+                    'credit': credit_fee_entry
                     # this fee entry is also suspicious when I changed it, kayne
                 }
                 self.add_taxable_asset('fee', fee_entries)
@@ -47,7 +46,10 @@ class TaxableTx(BaseTx):
         self.taxable = True
 
     def generate_debit_entry(self):
-        return self.create_entry(**self.entry_template['debit'])
+        entries = [self.create_entry(**self.entry_template['debit'])]
+        if 'fee' in self.taxable_assets.keys():
+            entries.append(self.create_entry(**self.fee_entry_template['debit']))
+        return entries
     
     def generate_credit_entries(self, asset, open_price, qty, **kwargs):
 
@@ -62,7 +64,6 @@ class TaxableTx(BaseTx):
             adj_config = {
                 **entry,
                 'mkt': asset,
-                'quantity': 0, # intentionally 0, if overwritten will affect quantity which is not wanted
                 'quote': tx_asset.usd_price,
                 'value': change_val,
             }
@@ -74,6 +75,7 @@ class TaxableTx(BaseTx):
         # 2. close crypto and fair value
         close_base_config = {
                 'mkt': asset,
+                'type': kwargs.get('type', self.type),
                 'quote': open_price,
                 'close_quote': tx_asset.usd_price,
             }
@@ -96,6 +98,7 @@ class TaxableTx(BaseTx):
             adj_config = {
                 **entry,
                 'mkt': asset,
+                'type': kwargs.get('type', self.type),
                 'quantity': 0, # intentionally 0, if overwritten will affect quantity which is not wanted
                 'quote': open_price,
                 'close_quote': tx_asset.usd_price,
