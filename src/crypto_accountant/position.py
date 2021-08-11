@@ -79,7 +79,6 @@ class Position:
             self.stats[name]['highest'] = price
         if price < lowest:
             self.stats[name]['lowest'] = price
-        print(timestamp, last, first)
         if timestamp < first:
             self.stats[name]['first_timestamp'] = timestamp
             self.stats[name]['first'] = price

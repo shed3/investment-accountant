@@ -80,9 +80,7 @@ class BookKeeper:
     def process_taxable(self, tx):
         # add opening sell entry to entries list
         entries = [tx.generate_debit_entry()]
-        print("TX TYPE", tx.type)
         for taxable_asset in tx.taxable_assets.keys():
-            print("TXABLE ASSET", taxable_asset)
             # sort all open tax lots for tx's base currency position
             position = self.positions[tx.assets[taxable_asset].symbol]
             open_lots = position.open_tax_lots.copy()
@@ -98,7 +96,6 @@ class BookKeeper:
             qty = tx.assets[taxable_asset].quantity
             filled_qty = 0  # tracks qty filled from open tax lots
             tax_lot_usage = {}
-            print("QTY", tx.assets[taxable_asset].symbol, qty)
             while filled_qty < qty and len(lots) > 0:
                 current_lot = lots[0]
                 lot_available_qty = current_lot['qty']
@@ -113,7 +110,6 @@ class BookKeeper:
                 position.close(tx.id, lot_price, tx.timestamp, tax_lot_usage)
 
                 closing_entries = tx.generate_credit_entries(taxable_asset, lot_price, fillable_qty)
-                print('closing entries', closing_entries)
                 entries += closing_entries
                 filled_qty += fillable_qty
                 del lots[0]

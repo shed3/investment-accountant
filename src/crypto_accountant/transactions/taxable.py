@@ -1,14 +1,3 @@
-"""
-Accountable TXs
-
-The premise of an accountable transaction flips the responsibilty of knowledge regarding
-how a tx affects accounts from the book keeper to the txs themselves. This means that
-txs MUST understand how it would affect an account and be able to provide entries describing
-it's effect. It is also important that txs recognize which assets involved in the tx were
-incoming/outgoing and provide a simple interface for describing the credits and debits.
-This allows for tracking higher level positions outside the scope of a tx.
-"""
-
 from .base import BaseTx
 from .entry_config import CRYPTO, REALIZED_GAIN_LOSS, UNREALIZED_GAIN_LOSS, CRYPTO_FAIR_VALUE_ADJ
 
@@ -83,7 +72,6 @@ class TaxableTx(BaseTx):
         close_cost_basis_entry = self.close_entries[0]
         close_fair_value_entry = self.close_entries[1]
         # 2. close crypto and fair value
-        print('current market', asset)
         close_base_config = {
                 'mkt': asset,
                 'quote': open_price,

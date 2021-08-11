@@ -1,11 +1,9 @@
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
 import uuid
 import random
+import pandas as pd
+from datetime import datetime, timedelta
 from randomtimestamp import randomtimestamp
 from src.crypto_accountant.utils import set_decimal
-from src.crypto_accountant.transaction import Transaction
 from src.crypto_accountant.position import Position
 from src.crypto_accountant.transactions.buy import Buy
 from src.crypto_accountant.transactions.sell import Sell
@@ -208,54 +206,6 @@ class TxnFactory:
         self.positions[base_currency].adjust_to_mtk(base_usd_price, timestamp)
         
         self.transactions.append(tx)
-
-
-
-        # available_assets = list(x for x in self.positions.keys())
-        # quote_currency = 'usd'
-        # available_assets = list(
-        #     [x for x in available_assets if x != quote_currency and self.positions[x].balance > 0])
-        # base_currency = kwargs.get(
-        #     "base_currency", available_assets[random.randint(0, len(available_assets) - 1)])
-        # base_position = self.positions[base_currency]
-        # quote_position = self.positions[quote_currency]
-        # base_quantity = set_decimal(
-        #     random.randint(0, int(base_position.balance)))
-
-        # timestamp = kwargs.get("timestamp", randomtimestamp(
-        #     start=base_position.mkt_timestamp, text=False))
-        # base_usd_price = self.data_factory.get_price(base_currency, timestamp)
-        # quote_usd_price = set_decimal(1)
-        # quote_quantity = base_usd_price * base_quantity / quote_usd_price
-        # args = {
-        #     'base_currency': base_currency,
-        #     'base_usd_price': base_usd_price,
-        #     'base_quantity': base_quantity,
-        #     'quote_currency': quote_currency,
-        #     'quote_usd_price': quote_usd_price,
-        #     'quote_quantity': quote_quantity,
-        #     'timestamp': timestamp
-        # }
-        # if set_decimal(random.random()) > .5:
-        #     fee_total_q = base_usd_price * \
-        #         base_quantity * \
-        #         set_decimal(random.randint(0, 7)) * set_decimal(.01)
-        #     args['fee_quantity'] = fee_total_q
-        #     args['fee_usd_price'] = args['quote_usd_price']
-        #     args['fee_currency'] = args['quote_currency']
-        # tx = self.txn_factory('sell', **args)
-        # tx = Sell(**tx)
-        # self.positions['usd'].add(tx.id, set_decimal(
-        #     1), tx.timestamp, tx.assets['base'].quantity)
-        # self.positions[base_currency]._closes[tx.id] = {
-        #     'timestamp': tx.timestamp,
-        #     'price': base_usd_price,
-        #     'qty': base_quantity,
-        #     'realized_gain': 0
-        # }
-        # self.transactions.append(tx)
-
-        
 
     def hardcoded_txs():
         date = datetime(year=2018, month=1, day=1)
