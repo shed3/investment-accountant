@@ -1,22 +1,42 @@
 ### MAIN ACCOUNTS ###
-ASSETS = {'account': 'assets'}
-EQUITIES = {'account': 'equities'}
-LIABILITIES = {'account': 'liabilities'}
+ASSETS = {'account_type': 'assets'}
+EQUITIES = {'account_type': 'equities'}
+LIABILITIES = {'account_type': 'liabilities'}
 
-### SUB ACCOUNTS ###
-CASH = {**ASSETS, 'sub_account': 'cash'}
-CRYPTO = {**ASSETS, 'sub_account': 'cryptocurrencies'}
 
-INVESTED_CAPITAL = {**EQUITIES, 'sub_account': 'invested_capital'}
-WITHDRAWN_CAPITAL = {**EQUITIES, 'sub_account': 'invested_capital'}
+# Current Assets (Assets)
+CURRENT_ASSETS = {**ASSETS, 'account': 'current_assets'}
+CASH = {**CURRENT_ASSETS, 'sub_account': 'cash'}
+CRYPTO = {**CURRENT_ASSETS, 'sub_account': 'cryptocurrencies'}
+CRYPTO_FAIR_VALUE_ADJ = {**CURRENT_ASSETS, 'sub_account': 'cryptocurrencies_fair_value'}
 
-TRANSFERS_IN = {**EQUITIES, 'sub_account': 'transfers_in'}
-TRANSFERS_OUT = {**EQUITIES, 'sub_account': 'transfers_out'}
+# Receivables (Assets)
+RECEIVABLES = {**ASSETS, 'account': 'receivables'}
+INTEREST_ACCRUED_ACCOUNT = {**RECEIVABLES, 'sub_account': 'interest_accrued_account'}
+INTEREST_ACCRUED_STAKE = {**RECEIVABLES, 'sub_account': 'interest_accrued_stake'}
+REWARDS_ACCRUED = {**RECEIVABLES, 'sub_account': 'rewards_accrued'}
 
-INTEREST_EARNED_ACCOUNT = {**EQUITIES, 'sub_account': 'interest_earned_account'}
-INTEREST_EARNED_STAKE = {**EQUITIES, 'sub_account': 'interest_earned_stake'}
+# Payables (Liabilites)
+PAYABLES = {**LIABILITIES, 'account': 'payables'}
+INCOME_TAX_PAYABLE = {**PAYABLES, 'sub_account': 'income_tax_payable'}
+INTEREST_PAYABLE = {**PAYABLES, 'sub_account': 'interest_payable'}
 
-REWARDS = {**EQUITIES, 'sub_account': 'rewards'}
-REALIZED_GAIN_LOSS = {**EQUITIES, 'sub_account': 'realized_gains_losses'}
+# Revenues
+REVENUES = {**EQUITIES, 'account': 'revenues'}
+INTEREST_EARNED_ACCOUNT = {**REVENUES, 'sub_account': 'interest_earned_account'}
+INTEREST_EARNED_STAKE = {**REVENUES, 'sub_account': 'interest_earned_stake'}
+REWARDS = {**REVENUES, 'sub_account': 'rewards'}
+REALIZED_GAIN_LOSS = {**REVENUES, 'sub_account': 'realized_gains_losses'}
+UNREALIZED_GAIN_LOSS = {**REVENUES, 'sub_account': 'unrealized_gains_losses'}
 
-FEES_PAID = {**LIABILITIES, 'sub_account': 'fees_paid'}
+# Expenses
+EXPENSES = {**EQUITIES, 'account': 'expenses'}
+FEES_PAID = {**EXPENSES, 'sub_account': 'fee_expense'}
+TAXES_PAID = {**EXPENSES, 'sub_account': 'income_tax_expense'}
+
+# Owner activities
+INVESTED_CAPITAL = {**EQUITIES, 'account': 'invested_capital'}
+DEPOSITS = {**INVESTED_CAPITAL, 'sub_account': 'usd_deposits'}
+WITHDRAWALS = {**INVESTED_CAPITAL, 'sub_account': 'usd_withdrawals'}
+TRANSFERS_IN = {**INVESTED_CAPITAL, 'sub_account': 'transfers_in'}
+TRANSFERS_OUT = {**INVESTED_CAPITAL, 'sub_account': 'transfers_out'}

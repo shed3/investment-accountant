@@ -1,11 +1,11 @@
 from .base import BaseTx
-from .entry_config import CASH, INVESTED_CAPITAL
+from .entry_config import CASH, DEPOSITS
 
 debit_base_entry = {'side': "debit", **CASH}
-credit_quote_entry = {'side': "credit",  **INVESTED_CAPITAL}
+credit_base_entry = {'side': "credit",  **DEPOSITS}
 entry_template = {
     'debit': debit_base_entry,
-    'credit': credit_quote_entry
+    'credit': credit_base_entry
 }
 
 class Deposit(BaseTx):

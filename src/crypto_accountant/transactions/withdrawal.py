@@ -1,11 +1,11 @@
 from .base import BaseTx
-from .entry_config import CASH, WITHDRAWN_CAPITAL
+from .entry_config import CASH, WITHDRAWALS
 
-debit_base_entry = {'side': "debit", **WITHDRAWN_CAPITAL}
-credit_quote_entry = {'side': "credit",  **CASH}
+debit_base_entry = {'side': "debit", **WITHDRAWALS}
+credit_base_entry = {'side': "credit",  **CASH}
 entry_template = {
     'debit': debit_base_entry,
-    'credit': credit_quote_entry
+    'credit': credit_base_entry
 }
 
 class Withdrawal(BaseTx):
