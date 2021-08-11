@@ -19,7 +19,6 @@ class Ledger:
     def __init__(self) -> None:
 
         self.entries = []
-        self.debits = []
 
     @property
     def raw(self):

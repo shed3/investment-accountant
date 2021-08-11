@@ -36,14 +36,14 @@ class BaseTx:
         self.timestamp = kwargs.get("timestamp", None)
         self.assets = {
             'base': Asset(
-                kwargs.get("base_currency", ""),
-                kwargs.get("base_quantity", 0),
-                kwargs.get("base_usd_price", 0),
+                kwargs.get("base_currency", kwargs.get("baseCurrency", "")),
+                kwargs.get("base_quantity", kwargs.get("baseQuantity", 0)),
+                kwargs.get("base_usd_price", kwargs.get("baseUsdPrice", 0)),
             ),
             'quote': Asset(
-                kwargs.get("quote_currency", ""),
-                kwargs.get("quote_quantity", 0),
-                kwargs.get("quote_usd_price", 0),
+                kwargs.get("quote_currency", kwargs.get("quoteCurrency", "")),
+                kwargs.get("quote_quantity", kwargs.get("quoteQuantity", 0)),
+                kwargs.get("quote_usd_price", kwargs.get("quoteUsdPrice", 0)),
             ),
         }
         self.sub_total = self.assets['base'].usd_value + self.assets['quote'].usd_value
@@ -53,9 +53,9 @@ class BaseTx:
         fee_qty = kwargs.get("fee_quantity", 0)
         if fee_qty > 0:
             self.assets['fee'] = Asset(
-                kwargs.get("fee_currency", ""),
-                kwargs.get("fee_quantity", 0),
-                kwargs.get("fee_usd_price", 0),
+                kwargs.get("fee_currency", kwargs.get("fee_currency", "")),
+                kwargs.get("fee_quantity", kwargs.get("feeQuantity", 0)),
+                kwargs.get("fee_usd_price", kwargs.get("feeUsdPrice", 0)),
             )
             self.total += self.assets['fee'].usd_value
 
@@ -104,6 +104,7 @@ class BaseTx:
             'taxable': kwargs.get("taxable", self.taxable),
             'symbol': kwargs.get("symbol", self.assets[mkt].symbol),
             'quote': kwargs.get("quote", self.assets[mkt].usd_price),
+            'close_quote': kwargs.get("close_quote", self.assets[mkt].usd_price),
             '{}_value'.format(side): kwargs.get("value", default_value),
             '{}_quantity'.format(side): kwargs.get('quantity', default_quantity),
         }

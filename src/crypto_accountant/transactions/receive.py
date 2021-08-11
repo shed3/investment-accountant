@@ -2,10 +2,10 @@ from .base import BaseTx
 from .entry_config import CRYPTO, TRANSFERS_IN
 
 debit_base_entry = {'side': "debit", **CRYPTO}
-credit_quote_entry = {'side': "credit",  **TRANSFERS_IN}
+credit_base_entry = {'side': "credit",  **TRANSFERS_IN}
 entry_template = {
     'debit': debit_base_entry,
-    'credit': credit_quote_entry
+    'credit': credit_base_entry
 }
 
 class Receive(BaseTx):

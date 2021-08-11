@@ -1,6 +1,8 @@
 
 from datetime import datetime
 from .utils import set_decimal
+import pytz
+utc=pytz.UTC
 class Position:
 
     def __init__(self, symbol) -> None:
@@ -9,6 +11,7 @@ class Position:
         self._closes = {}
         self.stats = {'open': {}, 'close': {}}
         self.mkt_price = 0
+        self.mkt_timestamp = None
 
     @property
     def balance(self):
@@ -63,24 +66,31 @@ class Position:
                 self._opens[id]['term'] = 'long'
 
     def _update_stats(self, name, price, timestamp):
+        timestamp = timestamp.replace(tzinfo=utc)
         entries = self._opens.values() if name == 'open' else self._closes.values()
         entries = list(entries)
         prices = list([(lambda x: x['price'])(x) for x in entries])
         self.stats[name]['avg'] = sum(prices) / len(entries)
-        if price > self.stats[name].get('highest', 0):
+        highest = self.stats[name].get('highest', 0)
+        lowest = self.stats[name].get('lowest', 999999999)
+        first = self.stats[name].get('first_timestamp', datetime(year=3000, month=1, day=1, tzinfo=utc))
+        last =self.stats[name].get('last_timestamp', datetime(year=1000, month=1, day=1, tzinfo=utc))
+        if price > highest:
             self.stats[name]['highest'] = price
-        if price < self.stats[name].get('lowest', 999999999):
+        if price < lowest:
             self.stats[name]['lowest'] = price
-        if timestamp < self.stats[name].get('first_timestamp', datetime(year=3000, month=1, day=1)):
+        print(timestamp, last, first)
+        if timestamp < first:
             self.stats[name]['first_timestamp'] = timestamp
             self.stats[name]['first'] = price
-        if timestamp > self.stats[name].get('last_timestamp', datetime(year=1000, month=1, day=1)):
+        if timestamp > last:
             self.stats[name]['last_timestamp'] = timestamp
             self.stats[name]['last'] = price
-            self.adjust_to_mtk(price, timestamp)
+        self.adjust_to_mtk(price, timestamp)
 
     def add(self, id, price, timestamp, qty):
         # add entry to opens and update open_stats
+        timestamp = timestamp.replace(tzinfo=utc)
         price = set_decimal(price)
         qty = set_decimal(qty)
         self._opens[id] = {
@@ -95,6 +105,7 @@ class Position:
 
     def close(self, id, price, timestamp, config):
         # add entry to closes and update close_stats
+        timestamp = timestamp.replace(tzinfo=utc)
         price = set_decimal(price)
         qty =  sum(list([set_decimal(x) for x in list(config.values())]))
         self._closes[id] = {
