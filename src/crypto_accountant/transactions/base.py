@@ -97,6 +97,7 @@ class BaseTx:
         default_quantity = self.assets[mkt].quantity
         entry = {
             'id': kwargs.get("id", self.id),
+            'account_type': kwargs.get("account_type", None),
             'account': kwargs.get("account", None),
             'sub_account': kwargs.get("sub_account", None),
             'type': tx_type,

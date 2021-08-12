@@ -3,7 +3,7 @@ import random
 import pandas as pd
 from datetime import datetime, timedelta
 from randomtimestamp import randomtimestamp
-from src.crypto_accountant.utils import set_decimal
+from src.crypto_accountant.utils import check_type
 from src.crypto_accountant.position import Position
 from src.crypto_accountant.transactions.buy import Buy
 from src.crypto_accountant.transactions.sell import Sell
@@ -29,9 +29,9 @@ class TxnFactory:
         self.date_range = self.data_factory.date_range
         self.eod_data = self.data_factory.data
         for symbol in self.positions.keys():
-            self.positions[symbol].mkt_price = set_decimal(
+            self.positions[symbol].mkt_price = check_type(
                 self.eod_data[symbol].iloc[0]['close'])
-            self.positions[symbol].mkt_timestamp = set_decimal(
+            self.positions[symbol].mkt_timestamp = check_type(
                 self.eod_data[symbol].index[0])
         self.transactions = []
 
@@ -45,7 +45,7 @@ class TxnFactory:
     def generate_fee(self, qty, price=1, symbol='usd', max_pct_diff=7):
         fee = {}
         fee_total_q = qty * \
-            set_decimal(random.randint(1, max_pct_diff)) * set_decimal(.01)
+            check_type(random.randint(1, max_pct_diff)) * check_type(.01)
         fee['qty'] = fee_total_q
         fee['price'] = price
         fee['symbol'] = symbol
@@ -57,8 +57,8 @@ class TxnFactory:
             'id': kwargs.get("id", uuid.uuid4()),
             'timestamp': kwargs.get('timestamp', randomtimestamp(start_year=2018, text=False)),
             'base_currency': kwargs.get('base_currency', 'btc'),
-            'base_usd_price': kwargs.get('base_usd_price', set_decimal(random.randint(8000, 10000))),
-            'base_quantity': kwargs.get('base_quantity', set_decimal(random.randint(1, 10)))
+            'base_usd_price': kwargs.get('base_usd_price', check_type(random.randint(8000, 10000))),
+            'base_quantity': kwargs.get('base_quantity', check_type(random.randint(1, 10)))
         }
 
         if 'quote_currency' in kwargs:
@@ -77,16 +77,16 @@ class TxnFactory:
         print(args)
         return args
 
-    def deposit_factory(self, base_quantity=set_decimal(random.randint(0, 10000)), include_fee=False, **kwargs):
+    def deposit_factory(self, base_quantity=check_type(random.randint(0, 10000)), include_fee=False, **kwargs):
         args = {
             'base_currency': 'usd',
-            'base_usd_price': set_decimal(1),
+            'base_usd_price': check_type(1),
             'base_quantity': base_quantity,
             'timestamp': kwargs.get("timestamp", randomtimestamp(start_year=2018, text=False))
         }
         tx_kwargs = self.generic_factory('deposit', include_fee=include_fee, **args)
         tx = Deposit(**tx_kwargs)
-        self.positions['usd'].add(tx.id, set_decimal(
+        self.positions['usd'].add(tx.id, check_type(
             1), tx.timestamp, tx.assets['base'].quantity)
         self.transactions.append(tx)
 
@@ -96,7 +96,7 @@ class TxnFactory:
         args = {
             'base_currency': base_currency,
             'base_usd_price': self.data_factory.get_price(base_currency, timestamp),
-            'base_quantity': kwargs.get('base_quantity', set_decimal(random.randint(1, 100))),
+            'base_quantity': kwargs.get('base_quantity', check_type(random.randint(1, 100))),
             'timestamp': timestamp
         }
         tx_kwargs = self.generic_factory('receive', include_fee=include_fee, **args)
@@ -109,7 +109,7 @@ class TxnFactory:
         base_currency = kwargs.get("base_currency", self.get_rand_currency())
         timestamp = randomtimestamp(
             start=self.positions['usd'].mkt_timestamp, text=False)
-        quote_quantity = set_decimal(
+        quote_quantity = check_type(
             random.uniform(.1, float(self.positions['usd'].balance)))
         base_usd_price = self.data_factory.get_price(base_currency, timestamp)
         base_quantity = quote_quantity / base_usd_price
@@ -122,18 +122,18 @@ class TxnFactory:
         include_fee = kwargs.get('include_fee', bool(random.randint(0, 1)))
         tx_kwargs = self.generic_factory('buy', include_fee=include_fee, **args)
         tx_kwargs['quote_currency'] =  'usd'
-        tx_kwargs['quote_usd_price'] = set_decimal(1)
+        tx_kwargs['quote_usd_price'] = check_type(1)
         tx_kwargs['quote_quantity'] = quote_quantity
         tx = Buy(**tx_kwargs)
         self.positions[base_currency].add(
             tx.id, tx.assets['base'].usd_price, tx.timestamp, tx.assets['base'].quantity)
         self.positions['usd']._closes[tx.id] = {
             'timestamp': tx.timestamp,
-            'price': set_decimal(1),
+            'price': check_type(1),
             'qty': quote_quantity,
             'realized_gain': 0
         }
-        self.positions['usd'].adjust_to_mtk(set_decimal(1), timestamp)
+        self.positions['usd'].adjust_to_mtk(check_type(1), timestamp)
         self.transactions.append(tx)
 
     def swap_factory(self, **kwargs):
@@ -146,7 +146,7 @@ class TxnFactory:
             start=quote_position.mkt_timestamp, text=False))
         quote_usd_price = self.data_factory.get_price(quote_currency, timestamp)
         base_usd_price = self.data_factory.get_price(base_currency, timestamp)
-        quote_quantity = set_decimal(random.uniform(0, .1)) * quote_position.balance
+        quote_quantity = check_type(random.uniform(0, .1)) * quote_position.balance
         base_quantity = quote_usd_price * quote_quantity / base_usd_price
         args = {
             'base_currency': base_currency,
@@ -154,7 +154,7 @@ class TxnFactory:
             'base_quantity': base_quantity,
             'timestamp': timestamp,
             'quote_currency':  quote_currency,
-            'quote_usd_price': set_decimal(1),
+            'quote_usd_price': check_type(1),
             'quote_quantity': quote_quantity,
             'mkt': 'quote'
         }
@@ -179,7 +179,7 @@ class TxnFactory:
         base_currency = kwargs.get("base_currency", self.get_rand_currency(available_assets, excludes=excludes))
         print("BASE SELL", base_currency)
         base_position = self.positions[base_currency]
-        base_quantity = set_decimal(random.uniform(.1, float(base_position.balance)))
+        base_quantity = check_type(random.uniform(.1, float(base_position.balance)))
         timestamp = randomtimestamp(start=base_position.mkt_timestamp, text=False)
         base_usd_price = self.data_factory.get_price(base_currency, timestamp)
         quote_quantity = base_quantity * base_usd_price
@@ -192,11 +192,11 @@ class TxnFactory:
         include_fee = kwargs.get('include_fee', bool(random.randint(0, 1)))
         tx_kwargs = self.generic_factory('sell', include_fee=include_fee, **args)
         tx_kwargs['quote_currency'] =  'usd'
-        tx_kwargs['quote_usd_price'] = set_decimal(1)
+        tx_kwargs['quote_usd_price'] = check_type(1)
         tx_kwargs['quote_quantity'] = quote_quantity
         tx = Sell(**tx_kwargs)
         self.positions['usd'].add(
-            tx.id, set_decimal(1), tx.timestamp, tx.assets['quote'].quantity)
+            tx.id, check_type(1), tx.timestamp, tx.assets['quote'].quantity)
         self.positions[base_currency]._closes[tx.id] = {
             'timestamp': tx.timestamp,
             'price': base_usd_price,
@@ -216,8 +216,8 @@ class TxnFactory:
             'timestamp': date,
             'id': uuid.uuid4(),
             'base_currency': 'usd',
-            'base_quantity': set_decimal(10000.00),
-            'base_usd_price': set_decimal(1.00)
+            'base_quantity': check_type(10000.00),
+            'base_usd_price': check_type(1.00)
             })
         txs.append(deposit_initial)
         date = date.__add__(timedelta(days=2))
@@ -227,14 +227,14 @@ class TxnFactory:
             'timestamp': date,
             'id': uuid.uuid4(),
             'base_currency': 'btc',
-            'base_quantity': set_decimal(5.000000000000),
-            'base_usd_price': set_decimal(1000.00),
+            'base_quantity': check_type(5.000000000000),
+            'base_usd_price': check_type(1000.00),
             # 'fee_currency': 'usd',
-            # 'fee_quantity': set_decimal(2.99),
-            # 'fee_usd_price': set_decimal(1.00),
+            # 'fee_quantity': check_type(2.99),
+            # 'fee_usd_price': check_type(1.00),
             'quote_currency': 'usd',
-            'quote_quantity': set_decimal(5.000000000000) * set_decimal(1000.00),
-            'quote_usd_price': set_decimal(1.00),
+            'quote_quantity': check_type(5.000000000000) * check_type(1000.00),
+            'quote_usd_price': check_type(1.00),
             })
         txs.append(buy_btc_simple)    
 
@@ -245,14 +245,14 @@ class TxnFactory:
             'timestamp': date,
             'id': uuid.uuid4(),
             'base_currency': 'btc',
-            'base_quantity': set_decimal(1.000000000000),
-            'base_usd_price': set_decimal(2000.00),
+            'base_quantity': check_type(1.000000000000),
+            'base_usd_price': check_type(2000.00),
             # 'fee_currency': 'usd',
-            # 'fee_quantity': set_decimal(2.99),
-            # 'fee_usd_price': set_decimal(1.00),
+            # 'fee_quantity': check_type(2.99),
+            # 'fee_usd_price': check_type(1.00),
             'quote_currency': 'usd',
-            'quote_quantity': set_decimal(1.000000000000) * set_decimal(2000.00),
-            'quote_usd_price': set_decimal(1.00),
+            'quote_quantity': check_type(1.000000000000) * check_type(2000.00),
+            'quote_usd_price': check_type(1.00),
             })
         txs.append(short_term_btc_sell_gain)    
 
@@ -263,14 +263,14 @@ class TxnFactory:
             'timestamp': date,
             'id': uuid.uuid4(),
             'base_currency': 'btc',
-            'base_quantity': set_decimal(1.000000000000),
-            'base_usd_price': set_decimal(4000.00),
+            'base_quantity': check_type(1.000000000000),
+            'base_usd_price': check_type(4000.00),
             'fee_currency': 'usd',
-            'fee_quantity': set_decimal(2.99),
-            'fee_usd_price': set_decimal(1.00),
+            'fee_quantity': check_type(2.99),
+            'fee_usd_price': check_type(1.00),
             'quote_currency': 'usd',
-            'quote_quantity': set_decimal(1.000000000000) * set_decimal(4000.00),
-            'quote_usd_price': set_decimal(1.00),
+            'quote_quantity': check_type(1.000000000000) * check_type(4000.00),
+            'quote_usd_price': check_type(1.00),
             })
         txs.append(long_term_btc_sell_gain)    
 
@@ -281,14 +281,14 @@ class TxnFactory:
             'timestamp': date,
             'id': uuid.uuid4(),
             'base_currency': 'eth',
-            'base_quantity': set_decimal(10.000000000000),
-            'base_usd_price': set_decimal(50.00),
+            'base_quantity': check_type(10.000000000000),
+            'base_usd_price': check_type(50.00),
             'fee_currency': 'btc',
-            'fee_quantity': set_decimal(.001),
-            'fee_usd_price': set_decimal(500.00),
+            'fee_quantity': check_type(.001),
+            'fee_usd_price': check_type(500.00),
             'quote_currency': 'btc',
-            'quote_quantity': set_decimal(1.000000000000),
-            'quote_usd_price': set_decimal(500.00),
+            'quote_quantity': check_type(1.000000000000),
+            'quote_usd_price': check_type(500.00),
             })
         txs.append(long_term_btc_swap_loss)
               
@@ -309,24 +309,24 @@ class HistoricalDataFactory:
         }
         for d in range(self.date_range.size):
             if d == 0:
-                self.data['btc'].iloc[d]['close'] = set_decimal(6000)
-                self.data['eth'].iloc[d]['close'] = set_decimal(150)
-                self.data['link'].iloc[d]['close'] = set_decimal(2)
-                self.data['grt'].iloc[d]['close'] = set_decimal(.05)
-                self.data['ada'].iloc[d]['close'] = set_decimal(.50)
+                self.data['btc'].iloc[d]['close'] = check_type(6000)
+                self.data['eth'].iloc[d]['close'] = check_type(150)
+                self.data['link'].iloc[d]['close'] = check_type(2)
+                self.data['grt'].iloc[d]['close'] = check_type(.05)
+                self.data['ada'].iloc[d]['close'] = check_type(.50)
             else:
-                self.data['btc'].iloc[d]['close'] = set_decimal(self.data['btc'].iloc[d -
-                                                                                      1]['close'] * set_decimal(1 + random.uniform(-2, 2.5) / 100))
-                self.data['eth'].iloc[d]['close'] = set_decimal(self.data['eth'].iloc[d -
-                                                                                      1]['close'] * set_decimal(1 + random.uniform(-3, 3.5) / 100))
-                self.data['link'].iloc[d]['close'] = set_decimal(self.data['link'].iloc[d -
-                                                                                        1]['close'] * set_decimal(1 + random.uniform(-1, 1.5) / 100))
-                self.data['grt'].iloc[d]['close'] = set_decimal(self.data['grt'].iloc[d -
-                                                                                      1]['close'] * set_decimal(1 + random.uniform(-1, 1.5) / 100))
-                self.data['ada'].iloc[d]['close'] = set_decimal(self.data['ada'].iloc[d -
-                                                                                      1]['close'] * set_decimal(1 + random.uniform(-1, 1.5) / 100))
-        self.data['usd']['close'] = set_decimal(1)
-        self.data['usdc']['close'] = set_decimal(1)
+                self.data['btc'].iloc[d]['close'] = check_type(self.data['btc'].iloc[d -
+                                                                                      1]['close'] * check_type(1 + random.uniform(-2, 2.5) / 100))
+                self.data['eth'].iloc[d]['close'] = check_type(self.data['eth'].iloc[d -
+                                                                                      1]['close'] * check_type(1 + random.uniform(-3, 3.5) / 100))
+                self.data['link'].iloc[d]['close'] = check_type(self.data['link'].iloc[d -
+                                                                                        1]['close'] * check_type(1 + random.uniform(-1, 1.5) / 100))
+                self.data['grt'].iloc[d]['close'] = check_type(self.data['grt'].iloc[d -
+                                                                                      1]['close'] * check_type(1 + random.uniform(-1, 1.5) / 100))
+                self.data['ada'].iloc[d]['close'] = check_type(self.data['ada'].iloc[d -
+                                                                                      1]['close'] * check_type(1 + random.uniform(-1, 1.5) / 100))
+        self.data['usd']['close'] = check_type(1)
+        self.data['usdc']['close'] = check_type(1)
 
     def get_price(self, symbol, timestamp):
         date = datetime(year=timestamp.year,

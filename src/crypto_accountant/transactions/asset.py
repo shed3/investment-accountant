@@ -4,7 +4,6 @@ of a transaction. Currently it is used as a base coin,
 quote coin, or fee coin in a tx.
 """
 
-from ..utils import set_decimal
 
 stable_coins = [
     'usd',
@@ -26,8 +25,8 @@ class Asset:
         price,
     ) -> None:
         self.symbol = symbol.lower()
-        self.quantity = set_decimal(qty)
-        self.usd_price = set_decimal(price)
+        self.quantity = qty
+        self.usd_price = price
         self.usd_value = self.quantity * self.usd_price
         self.is_fiat = self.symbol == "usd"
         self.is_stable = self.is_fiat or self.symbol in stable_coins

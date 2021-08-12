@@ -4,7 +4,6 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 import random
 from randomtimestamp.functions import randomtimestamp
-from src.crypto_accountant.utils import set_decimal
 import uuid
 
 import firebase_admin
@@ -35,13 +34,18 @@ class Fixes:
         all_transactions = []
         for raw in raw_transactions:
             trans = raw.to_dict()
-            for key in trans:
-                val = trans[key]
-                if isinstance(val, int) or isinstance(val, float):
-                    val = Decimal(str(val))
-                    trans[key] = val
             all_transactions.append(trans)
         return sorted(all_transactions, key=lambda x: x['timestamp'])
+
+    def firestore_user_transactions(firestore_ref, uid='903Rf3cVflW2bzWc8x1YL8E78gy1'):
+        trans_ref = firestore_ref.collection(u'transactions')
+        riley_trans = trans_ref.where(u'uid', u'==', u'903Rf3cVflW2bzWc8x1YL8E78gy1')
+        raw_transactions = riley_trans.get()
+        all_transactions = []
+        for raw in raw_transactions:
+            trans = raw.to_dict()
+            all_transactions.append(trans)
+        return sorted(all_transactions, key=lambda x: x['timestamp'])        
 
     def local_txs(file_path=''):
         file = file_path if file_path else os.path.dirname(os.path.realpath(__file__)) + "/example_txs.json"
