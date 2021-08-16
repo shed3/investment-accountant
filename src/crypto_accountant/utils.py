@@ -74,15 +74,15 @@ def create_tx(**kwargs):
             return Receive(**args)  
         elif type == 'reward':
             return Reward(**args)  
-        elif type == 'interest_in_stake':
+        elif type == 'interest-in-stake':
             return InterestInStake(**args)  
-        elif type == 'interest_in_account':
+        elif type == 'interest-in-account':
             return InterestInAccount(**args)       
-        elif type == 'interest_in':
-            return InterestInAccount(**args)                                
+        # elif type == 'interest_in':
+            # return InterestInAccount(**args)                                
         else:
+            raise Exception('TYPE {} NOT CREATED'.format(type))
             return False
-            # raise Exception('TYPE {} NOT CREATED'.format(type))
     else:
         return False  
         # raise Exception('NO TYPE INCLUDED')

@@ -1,5 +1,4 @@
-from pandas.core.algorithms import isin
-from pandas.core.dtypes.missing import isna
+from src.crypto_accountant.transactions.base import BaseTx
 from src.crypto_accountant.transactions.interest_in_account import InterestInAccount
 from src.crypto_accountant.transactions.interest_in_stake import InterestInStake
 from src.crypto_accountant.transactions.reward import Reward
@@ -13,6 +12,7 @@ from src.crypto_accountant.transactions.withdrawal import Withdrawal
 from .ledger import Ledger
 from .position import Position
 from .utils import check_type, create_tx
+from .utils import check_type, create_tx
 
 
 class BookKeeper:
@@ -22,17 +22,16 @@ class BookKeeper:
         self.tax_rates = {'long': check_type(.25), 'short': check_type(.4)}
 
     def add_txs(self, txs, auto_detect=True):
-        transactions = []
-        for tx in txs:
-            if auto_detect:
-                tx = create_tx(**tx)
-            if type(tx) in [Buy, Sell, Deposit, Withdrawal, Send, Receive, Swap, Reward, InterestInAccount, InterestInStake]:
-                transactions.append(tx)
-        # transactions = sorted(transactions, key=lambda x: x.timestamp)
+        transactions = sorted(txs, key=lambda x: dict(x).get('timestamp'))
         for tx in transactions:
-            self.add_tx(tx)
+            self.add_tx(tx, auto_detect)
 
-    def add_tx(self, tx):
+    def add_tx(self, tx, auto_detect=True):
+        if auto_detect:
+            # if auto detect is allowed and the tx arg isnt already some form of BaseTx
+            # create an instance of the correct tx class based on tx data
+            if not isinstance(tx, BaseTx):
+                tx = create_tx(**tx)
         # create position from base_currency if needed
         if tx.assets['base'].symbol not in self.positions:
             self.positions[tx.assets['base'].symbol] = Position(
@@ -59,17 +58,22 @@ class BookKeeper:
 
         # add new tx's entries to ledger
         for entry in entries:
-            self.ledger.add_entry(entry)
+            self.ledger.add_entry(entry.to_dict())
 
     def process_taxable(self, tx):
-        # add opening sell entry to entries list
-        entries = tx.generate_debit_entry()
 
         # check if tx has fee and isnt taxable
-        if 'fee' not in tx.taxable_assets.keys():
-            # overwrite entries w/ tx entries using debit and inherited fee templates
+        if 'fee' not in tx.taxable_assets.keys() and len(tx.taxable_assets.keys()) > 0:
+            # fee isnt in taxable assets so just overwrite entry config
             entries = tx.get_entries(
                 config={'debit': tx.entry_template['debit']})
+        elif len(tx.taxable_assets.keys()) == 1:
+            # the fee is the only taxable asset
+            entries = tx.get_entries()
+        else:
+            # base or quote as well as fee are in taxable assets so just get debit entries
+            entries = tx.generate_debit_entry()
+
 
         for taxable_asset in tx.taxable_assets.keys():
             # sort all open tax lots for tx's base currency position

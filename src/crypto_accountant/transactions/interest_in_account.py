@@ -11,15 +11,18 @@ entry_template = {
 class InterestInAccount(BaseTx):
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(entry_template=entry_template, **kwargs)
+        kwargs['type'] = 'interest-in-account'
+        super().__init__(entry_template=entry_template.copy(), **kwargs)
+        if self.assets['base'].is_fiat:
+            self.entry_template['debit'] = debit_cash_base_entry
     
     def get_affected_balances(self):
         base = self.assets['base']
-        if base.is_fiat:
-            self.entry_template['debit'] = debit_cash_base_entry
+        # if base.is_fiat:
+        #     self.entry_template['debit'] = debit_cash_base_entry
         affected_balances = {}
         affected_balances[base.symbol] = base.quantity
-        if 'fee' in self.assets:
+        if 'fee' in self.assets.keys():
             fee = self.assets['fee']
             affected_balances[fee.symbol] = -fee.quantity
         return affected_balances

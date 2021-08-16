@@ -9,7 +9,8 @@ incoming/outgoing and provide a simple interface for describing the credits and 
 This allows for tracking higher level positions outside the scope of a tx.
 """
 
-from .asset import Asset
+from .components.asset import Asset
+from .components.entry import Entry
 from .entry_config import FEES_PAID, CASH
 
 debit_fee_entry = {'side': "debit", 'mkt': 'fee', **FEES_PAID}
@@ -34,29 +35,16 @@ class BaseTx:
         self.type = kwargs.get("type", None)
         self.taxable = kwargs.get("taxable", False)
         self.timestamp = kwargs.get("timestamp", None)
-        self.assets = {
-            'base': Asset(
-                kwargs.get("base_currency", ""),
-                kwargs.get("base_quantity", 0),
-                kwargs.get("base_usd_price", 0),
-            ),
-            'quote': Asset(
-                kwargs.get("quote_currency", ""),
-                kwargs.get("quote_quantity", 0),
-                kwargs.get("quote_usd_price", 0),
-            ),
-        }
-        self.sub_total = self.assets['base'].usd_value + self.assets['quote'].usd_value
+        self.assets = {}
+        self.add_asset("base", **kwargs)
+        self.add_asset("quote", **kwargs)
+        self.sub_total = self.assets['base'].usd_value
         self.total = self.sub_total
 
         # if fee exists create fee asset and add to assets
         fee_qty = kwargs.get("fee_quantity", 0)
         if fee_qty > 0:
-            self.assets['fee'] = Asset(
-                kwargs.get("fee_currency", ""),
-                kwargs.get("fee_quantity", 0),
-                kwargs.get("fee_usd_price", 0),
-            )
+            self.add_asset("fee", **kwargs)
             self.total += self.assets['fee'].usd_value
 
 
@@ -64,20 +52,47 @@ class BaseTx:
         print('Implementation Error: must define get_affected_balances for {} tx'.format(self.type))
         return {}
 
-    @property
     def to_dict(self):
         dict_val = self.__dict__.copy()
-        dict_val['base'] = self.assets['base'].to_dict
-        dict_val['quote'] = self.assets['quote'].to_dict
+        dict_val['base'] = self.assets['base'].to_dict()
+        dict_val['quote'] = self.assets['quote'].to_dict()
         if 'fee' in self.assets:
-            dict_val['fee'] = self.assets['fee'].to_dict
+            dict_val['fee'] = self.assets['fee'].to_dict()
         del dict_val['assets']
         return dict_val
+
+    def add_asset(self, position, **kwargs):
+        # position refers to asset's position within tx -> base, quote, fee
+        new_asset = Asset(
+            kwargs.get("{}_currency".format(position), ""),
+            kwargs.get("{}_quantity".format(position), 0),
+            kwargs.get("{}_usd_price".format(position), 0),
+        )
+        self.assets[position] =  new_asset
+        
     
-    def get_entries(self, **kwargs):
-        entry_configs = kwargs.get("config", self.entry_template)
-        fee_configs = kwargs.get("fee_config", self.fee_entry_template)
-        return self.create_entries(entry_configs, fee_configs)
+    def create_entry(self, **kwargs):
+        mkt = kwargs.get("mkt", 'base')
+        expected_entry_kwargs = {
+            'id': kwargs.get("id", self.id),
+            'account_type': kwargs.get("account_type", None),
+            'account': kwargs.get("account", None),
+            'sub_account': kwargs.get("sub_account", None),
+            'timestamp': kwargs.get("timestamp", self.timestamp),
+            'symbol': kwargs.get("symbol", self.assets[mkt].symbol),
+            'side': kwargs.get("side", ''),
+            'type': kwargs.get("type", self.type),
+            'quote': kwargs.get("quote", self.assets[mkt].usd_price),
+            'close_quote': kwargs.get("close_quote", self.assets[mkt].usd_price),
+            'value': kwargs.get("value", self.assets[mkt].usd_value),
+            'quantity': kwargs.get('quantity', self.assets[mkt].quantity),
+        }
+        entry_kwargs = {
+            **kwargs,
+            **expected_entry_kwargs
+        }
+        entry = Entry(**entry_kwargs)
+        return entry
 
     def create_entries(self, entry_configs, fee_configs):
         entries = list([self.create_entry(**config) for config in list(entry_configs.values())])
@@ -89,24 +104,11 @@ class BaseTx:
         self.entries = entries
         return entries
 
-    def create_entry(self, **kwargs):
-        side = kwargs.get("side", 'credit')
-        mkt = kwargs.get("mkt", 'base')
-        tx_type = kwargs.get("type", self.type)
-        default_value = self.assets[mkt].usd_value
-        default_quantity = self.assets[mkt].quantity
-        entry = {
-            'id': kwargs.get("id", self.id),
-            'account_type': kwargs.get("account_type", None),
-            'account': kwargs.get("account", None),
-            'sub_account': kwargs.get("sub_account", None),
-            'type': tx_type,
-            'timestamp': kwargs.get("timestamp", self.timestamp),
-            'taxable': kwargs.get("taxable", self.taxable),
-            'symbol': kwargs.get("symbol", self.assets[mkt].symbol),
-            'quote': kwargs.get("quote", self.assets[mkt].usd_price),
-            'close_quote': kwargs.get("close_quote", self.assets[mkt].usd_price),
-            '{}_value'.format(side): kwargs.get("value", default_value),
-            '{}_quantity'.format(side): kwargs.get('quantity', default_quantity),
-        }
-        return entry
+    def get_entries(self, **kwargs):
+        entry_configs = kwargs.get("config", self.entry_template)
+        fee_configs = kwargs.get("fee_config", self.fee_entry_template)
+        return self.create_entries(entry_configs, fee_configs)
+
+    
+
+    

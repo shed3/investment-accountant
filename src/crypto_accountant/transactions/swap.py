@@ -11,6 +11,7 @@ entry_template = {
 class Swap(TaxableTx):
 
     def __init__(self, **kwargs) -> None:
+        kwargs['type'] = 'swap'
         super().__init__(entry_template=entry_template.copy(), **kwargs)
         # if base asset isnt stable add to taxable assets
         if not self.assets['quote'].is_stable:
