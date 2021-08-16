@@ -1,17 +1,8 @@
-from src.crypto_accountant.transactions.base import BaseTx
-from src.crypto_accountant.transactions.interest_in_account import InterestInAccount
-from src.crypto_accountant.transactions.interest_in_stake import InterestInStake
-from src.crypto_accountant.transactions.reward import Reward
-from src.crypto_accountant.transactions.buy import Buy
-from src.crypto_accountant.transactions.deposit import Deposit
-from src.crypto_accountant.transactions.receive import Receive
-from src.crypto_accountant.transactions.sell import Sell
-from src.crypto_accountant.transactions.send import Send
-from src.crypto_accountant.transactions.swap import Swap
-from src.crypto_accountant.transactions.withdrawal import Withdrawal
+from datetime import datetime
+from decimal import Decimal
+from .transactions.base import BaseTx
 from .ledger import Ledger
 from .position import Position
-from .utils import check_type, create_tx
 from .utils import check_type, create_tx
 
 
@@ -56,9 +47,117 @@ class BookKeeper:
                 self.positions[symbol].add(
                     tx.id, asset.usd_price, tx.timestamp, asset.quantity)
 
+        entry_dicts = list([x.to_dict() for x in entries])
+        entry_check = self.validate_entry_set(entry_dicts)
+        # if not entry_check['valid']:
+        #     print(entry_check)
+
         # add new tx's entries to ledger
         for entry in entries:
             self.ledger.add_entry(entry.to_dict())
+
+    def validate_entry_set(self, entries):
+        """
+        1. Check required fields are present and all fields have correct data type
+            Required:
+            * timestamp -> datetime
+            * account_type -> str
+            * account -> str
+            * symbol -> str
+            * side -> str ("debit" or "credit")
+            * type -> str
+            * quantity -> Decimal
+            * value -> Decimal
+            * quote -> Decimal
+            Optional:
+            * sub_account -> str
+            * close_quote -> Decimal
+
+        2. Check that sum of all entries debits and credits balance
+            Passing Check
+            *  sum debit values - sum credit values = 0
+            *  (???) sum debit qty - sum credit qty = 0
+        """
+        debits = 0
+        credits = 0
+        required_fields = ['timestamp', 'account_type', 'account',
+                           'symbol', 'side', 'type', 'quantity', 'value', 'quote']
+        for entry in entries:
+            if not all(field in entry for field in required_fields):
+                return {
+                    'valid': False,
+                    'reason': "Entry missing required field. Make sure all entries contain fields: 'timestamp', 'account_type', 'account', 'symbol', 'side', 'type', 'quantity', 'value', 'quote'"
+                }
+            if not isinstance(entry['timestamp'], datetime):
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect timestamp format. Must be datetime instance'
+                }
+            if not isinstance(entry['account_type'],  str):
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect account_type format. Must be string'
+                }
+            if not isinstance(entry['account'],  str):
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect account format. Must be string'
+                }
+            if not isinstance(entry['symbol'],  str):
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect symbol format. Must be string'
+                }
+            if entry['side'] != 'credit' and entry['side'] != 'debit':
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect side format. Must be credit or debit'
+                }
+            if not isinstance(entry['type'],  str):
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect type format. Must be string'
+                }
+            if not isinstance(entry['quantity'],  Decimal):
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect quantity format. Must be Decimal'
+                }
+            if not isinstance(entry['value'],  Decimal):
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect value format. Must be Decimal'
+                }
+            if not isinstance(entry['quote'],  Decimal):
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect quote format. Must be Decimal'
+                }
+            if 'sub_account' in entry and not isinstance(entry['sub_account'],  str):
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect sub_account format. Must be Decimal'
+                }
+            if 'close_quote' in entry and not isinstance(entry['close_quote'],  Decimal):
+                return {
+                    'valid': False,
+                    'reason': 'Incorrect close_quote format. Must be Decimal'
+                }
+
+            # if you have made it this far you have passed the entry formatting checks!
+
+            if entry['side'] == 'credit':
+                credits += entry['value']
+            else:
+                debits += entry['value']
+
+        if credits - debits != 0:
+            return {
+                'valid': False,
+                'reason': 'Credit and debit entries do not balance. Diff = ' + str(credits - debits)
+            }
+
+        return {'valid': True}
 
     def process_taxable(self, tx):
 
@@ -73,7 +172,6 @@ class BookKeeper:
         else:
             # base or quote as well as fee are in taxable assets so just get debit entries
             entries = tx.generate_debit_entry()
-
 
         for taxable_asset in tx.taxable_assets.keys():
             # sort all open tax lots for tx's base currency position
