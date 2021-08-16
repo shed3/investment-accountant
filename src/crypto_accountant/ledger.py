@@ -12,6 +12,7 @@ The Ledger's main role is to act as the general ledger for the book keeper.
     summary = ledger.summarize()
 """
 from datetime import datetime
+from decimal import Decimal
 from re import T
 import pandas as pd
 import numpy as np
@@ -108,6 +109,7 @@ class Ledger:
 
     def generate_equity_curve(self, account_type):
         # calculate debit and credit qty balanaces for given account type
+
         ledger = self.simple.copy()
         ledger['account_type_quantity'] = ledger['quantity'].where((ledger['account_type'] == account_type), 0)
         ledger['debit_balance'] = ledger['account_type_quantity'].where(ledger['side'] == 'debit', 0)
@@ -146,7 +148,7 @@ class Ledger:
                 .pivot('timestamp', 'symbol', 'balance')
                 .rename_axis(columns=None)
                 .asfreq(freq='1D', normalize=True)
-                .fillna(0)
+                .fillna(Decimal(0))
                 .cumsum()
         )
         return eq_curve
