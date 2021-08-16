@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 import logging
 from os import replace
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 import pandas as pd
 from src.crypto_accountant.transactions.interest_in_account import InterestInAccount
 from src.crypto_accountant.transactions.interest_in_stake import InterestInStake
@@ -17,9 +17,10 @@ from src.crypto_accountant.transactions.withdrawal import Withdrawal
 import re
 import pytz
 
-utc=pytz.UTC
+utc = pytz.UTC
 
 log = logging.getLogger(__name__)
+
 
 def check_type(val, check_string=False, types=[Decimal]):
     original_type = type(val)
@@ -35,18 +36,19 @@ def check_type(val, check_string=False, types=[Decimal]):
                 try:
                     val = t(val)
                 except:
-                    pass        
+                    pass
     return val
+
 
 def create_tx(**kwargs):
     type = kwargs.get('type', 'other')
     args = {}
     for key, value in kwargs.items():
-        key = key.replace('-','_')
-        key = key.replace(' ','_')
+        key = key.replace('-', '_')
+        key = key.replace(' ', '_')
         key_pieces = re.findall('[A-Za-z][^A-Z]*', key)
         key = '_'.join(key_pieces)
-        key = key.replace('__','_')
+        key = key.replace('__', '_')
         key = key.lower()
         if key in ['tx_type', 'txn_type', 'type', 'trans_type', 'transaction_type']:
             tx_type = value
@@ -61,42 +63,39 @@ def create_tx(**kwargs):
         if type == 'deposit':
             return Deposit(**args)
         elif type == 'withdrawal':
-            return Withdrawal(**args)            
+            return Withdrawal(**args)
         elif type == 'buy':
             return Buy(**args)
         elif type == 'sell':
-            return Sell(**args)            
+            return Sell(**args)
         elif type == 'swap':
             return Swap(**args)
         elif type == 'send':
-            return Send(**args)     
+            return Send(**args)
         elif type == 'receive':
-            return Receive(**args)  
+            return Receive(**args)
         elif type == 'reward':
-            return Reward(**args)  
+            return Reward(**args)
         elif type == 'interest-in-stake':
-            return InterestInStake(**args)  
+            return InterestInStake(**args)
         elif type == 'interest-in-account':
-            return InterestInAccount(**args)       
+            return InterestInAccount(**args)
         # elif type == 'interest_in':
-            # return InterestInAccount(**args)                                
+            # return InterestInAccount(**args)
         else:
             raise Exception('TYPE {} NOT CREATED'.format(type))
             return False
     else:
-        return False  
+        return False
         # raise Exception('NO TYPE INCLUDED')
 
-
     # if tx['type'] == 'reward':
-    #     return Deposit(tx)  
+    #     return Deposit(tx)
     # if tx['type'] == 'interest_earned_account':
-    #     return Deposit(tx)  
+    #     return Deposit(tx)
     # if tx['type'] == 'interest_earned_stake':
-    #     return Deposit(tx)     
+    #     return Deposit(tx)
 
 
 def query_df(df, col, val):
     return df.loc[df[col] == val]
-    
-    

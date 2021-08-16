@@ -11,26 +11,29 @@ This allows for tracking higher level positions outside the scope of a tx.
 
 from .components.asset import Asset
 from .components.entry import Entry
-from .entry_config import FEES_PAID, CASH
+from .entry_config import FEES_PAID, CASH, CRYPTO
 
 debit_fee_entry = {'side': "debit", 'mkt': 'fee', **FEES_PAID}
-credit_fee_entry =  {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CASH}
+credit_fee_entry = {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CASH}
 fee_config = {
-    'debit': debit_fee_entry,
-    'credit': credit_fee_entry
+    'debit': debit_fee_entry.copy(),
+    'credit': credit_fee_entry.copy()
 }
+stable_credit_fee_entry = {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CRYPTO}
 
 # ALL VALUES MUST BE DECIMALS
+
+
 class BaseTx:
 
     def __init__(
         self,
         entry_template={},
-        fee_entry_template=fee_config,
+        fee_entry_template=fee_config.copy(),
         **kwargs
     ) -> None:
         self.entry_template = entry_template
-        self.fee_entry_template = fee_entry_template.copy()
+        self.fee_entry_template = fee_entry_template
         self.id = kwargs.get("id", None)
         self.type = kwargs.get("type", None)
         self.taxable = kwargs.get("taxable", False)
@@ -44,9 +47,14 @@ class BaseTx:
         # if fee exists create fee asset and add to assets
         fee_qty = kwargs.get("fee_quantity", 0)
         if fee_qty > 0:
+            if kwargs['fee_currency'] == kwargs['base_currency']:
+                kwargs['fee_usd_price'] = kwargs['base_usd_price']
+            elif 'quote_currency' in kwargs and kwargs['fee_currency'] == kwargs['quote_currency']:
+                kwargs['fee_usd_price'] = kwargs['quote_usd_price']
             self.add_asset("fee", **kwargs)
+            if self.assets['fee'].is_stable and not self.assets['fee'].is_fiat:
+                self.fee_entry_template['credit'] = stable_credit_fee_entry.copy()
             self.total += self.assets['fee'].usd_value
-
 
     def get_affected_balances(self):
         print('Implementation Error: must define get_affected_balances for {} tx'.format(self.type))
@@ -68,9 +76,8 @@ class BaseTx:
             kwargs.get("{}_quantity".format(position), 0),
             kwargs.get("{}_usd_price".format(position), 0),
         )
-        self.assets[position] =  new_asset
-        
-    
+        self.assets[position] = new_asset
+
     def create_entry(self, **kwargs):
         mkt = kwargs.get("mkt", 'base')
         expected_entry_kwargs = {
@@ -98,9 +105,12 @@ class BaseTx:
         entries = list([self.create_entry(**config) for config in list(entry_configs.values())])
         if 'fee' in self.assets and self.assets['fee'].quantity > 0:
             if self.assets['fee'].is_fiat:
-            # add fee entries to list of tx entries
+                # add fee entries to list of tx entries
                 fee_entries = list([self.create_entry(**config) for config in list(fee_configs.values())])
                 entries += fee_entries
+            else:
+                entries.append(self.create_entry(**self.fee_entry_template['debit']))
+
         self.entries = entries
         return entries
 
@@ -108,7 +118,3 @@ class BaseTx:
         entry_configs = kwargs.get("config", self.entry_template)
         fee_configs = kwargs.get("fee_config", self.fee_entry_template)
         return self.create_entries(entry_configs, fee_configs)
-
-    
-
-    

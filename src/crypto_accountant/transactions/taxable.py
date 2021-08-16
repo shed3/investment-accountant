@@ -20,6 +20,8 @@ close_gain_entries = [close_unrealized_gains, close_realized_gains]
 
 credit_fee_entry = {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CRYPTO}
 # I think this single fee entry is suspicious, could be causing a good amount of imbalance if not taken into account properly elsewhere.
+
+
 class TaxableTx(BaseTx):
     # Each taxable transaction entry should have the correct open quote, close quote, and current quote added. This will allow us to automatically derive gains, tax and (I think) equity curve
 
@@ -30,15 +32,16 @@ class TaxableTx(BaseTx):
         self.close_entries = close_entries
         self.gain_entries = gain_entries
         if 'fee' in self.assets.keys():
-            if not self.assets['fee'].is_fiat and not self.assets['fee'].is_stable:
+            if not self.assets['fee'].is_fiat:
                 #  add fee to taxable assets and set credit entry to use crypto account
                 fee_entries = {
                     **self.fee_entry_template,
                     'credit': credit_fee_entry
                     # this fee entry is also suspicious when I changed it, kayne
                 }
-                self.add_taxable_asset('fee', fee_entries)
-                self.fee_entry_template = fee_entries  # set credit entry to use crypto account
+                self.fee_entry_template = fee_entries.copy()  # set credit entry to use crypto account
+            if not self.assets['fee'].is_stable:
+                self.add_taxable_asset('fee', fee_entries.copy())
 
     def add_taxable_asset(self, name, entry_template):
         # name of assets position in tx -> can be any of [base, quote, fee]
@@ -50,11 +53,11 @@ class TaxableTx(BaseTx):
         if 'fee' in self.taxable_assets.keys():
             entries.append(self.create_entry(**self.fee_entry_template['debit']))
         return entries
-    
+
     def generate_credit_entries(self, asset, open_price, qty, **kwargs):
 
         # 1. adjust to market entries
-        tx_asset =  self.assets[asset]
+        tx_asset = self.assets[asset]
         closing_val = tx_asset.usd_price * qty
         open_val = open_price * qty
         change_val = closing_val - open_val
@@ -74,21 +77,21 @@ class TaxableTx(BaseTx):
         close_fair_value_entry = self.close_entries[1]
         # 2. close crypto and fair value
         close_base_config = {
-                'mkt': asset,
-                'type': kwargs.get('type', self.type),
-                'quote': open_price,
-                'close_quote': tx_asset.usd_price,
-            }
+            'mkt': asset,
+            'type': kwargs.get('type', self.type),
+            'quote': open_price,
+            'close_quote': tx_asset.usd_price,
+        }
         close_cost_basis_entry = {
             **close_cost_basis_entry,
             **close_base_config,
-            'quantity': qty, # intentionally 0, if overwritten will affect quantity which is not wanted
+            'quantity': qty,  # intentionally 0, if overwritten will affect quantity which is not wanted
             'value': open_val,
         }
         close_fair_value_entry = {
             **close_fair_value_entry,
             **close_base_config,
-            'quantity': 0, # intentionally 0, if overwritten will affect quantity which is not wanted
+            'quantity': 0,  # intentionally 0, if overwritten will affect quantity which is not wanted
             'value': change_val,
         }
         all_entries.append(self.create_entry(**close_cost_basis_entry))
@@ -99,7 +102,7 @@ class TaxableTx(BaseTx):
                 **entry,
                 'mkt': asset,
                 'type': kwargs.get('type', self.type),
-                'quantity': 0, # intentionally 0, if overwritten will affect quantity which is not wanted
+                'quantity': 0,  # intentionally 0, if overwritten will affect quantity which is not wanted
                 'quote': open_price,
                 'close_quote': tx_asset.usd_price,
                 'value': change_val,

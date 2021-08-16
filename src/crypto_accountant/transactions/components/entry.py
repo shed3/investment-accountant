@@ -1,4 +1,4 @@
-from decimal import Decimal
+from ..utils import set_precision
 
 
 class Entry:
@@ -37,21 +37,21 @@ class Entry:
 
     @quantity.setter
     def quantity(self, qty):
-        self._quantity = qty if isinstance(qty, Decimal) else Decimal(qty)
+        self._quantity = set_precision(qty, 18)
 
     @value.setter
     def value(self, val):
-        self._value = val if isinstance(val, Decimal) else Decimal(val)
+        self._value = set_precision(val, 2)
 
     @quote.setter
     def quote(self, val):
-        self._quote = val if isinstance(val, Decimal) else Decimal(val)
+        self._quote = set_precision(val, 18)
 
     @close_quote.setter
     def close_quote(self, val):
-        self._close_quote = val if isinstance(val, Decimal) else Decimal(val)
-    
-    def to_dict(self):  
+        self._close_quote = set_precision(val, 18)
+
+    def to_dict(self):
         val = self.__dict__.copy()
         val['quantity'] = val['_quantity']
         val['value'] = val['_value']
@@ -63,5 +63,5 @@ class Entry:
         if val['_close_quote'] != 0:
             val['close_quote'] = val['_close_quote']
         del val['_close_quote']
-        
+
         return val
