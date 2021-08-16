@@ -1,12 +1,13 @@
 from .taxable import TaxableTx
-from .entry_config import CRYPTO, CASH
+from .entry_config import CRYPTO
 
 debit_base_entry = {'side': "debit", **CRYPTO}
-credit_quote_entry = {'side': "credit", **CRYPTO}
+credit_quote_entry = {'side': "credit", 'mkt': 'quote', **CRYPTO}
 entry_template = {
     'debit': debit_base_entry,
     'credit': credit_quote_entry
 }
+
 
 class Swap(TaxableTx):
 
