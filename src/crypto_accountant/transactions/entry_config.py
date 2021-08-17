@@ -1,7 +1,8 @@
 ### MAIN ACCOUNTS ###
 ASSETS = {'account_type': 'assets'}
-EQUITIES = {'account_type': 'equities'}
 LIABILITIES = {'account_type': 'liabilities'}
+EQUITIES = {'account_type': 'equities'}
+# equity accounts are used for income statements
 
 
 # Current Assets (Assets)

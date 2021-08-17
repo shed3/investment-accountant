@@ -1,16 +1,18 @@
 from .taxable import TaxableTx
-from .entry_config import CRYPTO, CASH
+from .entry_config import CRYPTO
 
 debit_base_entry = {'side': "debit", **CRYPTO}
-credit_quote_entry = {'side': "credit", **CRYPTO}
+credit_quote_entry = {'side': "credit", 'mkt': 'quote', **CRYPTO}
 entry_template = {
     'debit': debit_base_entry,
     'credit': credit_quote_entry
 }
 
+
 class Swap(TaxableTx):
 
     def __init__(self, **kwargs) -> None:
+        kwargs['type'] = 'swap'
         super().__init__(entry_template=entry_template.copy(), **kwargs)
         # if base asset isnt stable add to taxable assets
         if not self.assets['quote'].is_stable:

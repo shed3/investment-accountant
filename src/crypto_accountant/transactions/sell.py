@@ -3,6 +3,7 @@ from .entry_config import CRYPTO, CASH
 
 debit_quote_entry = {'side': "debit", 'mkt': 'quote', **CASH}
 credit_base_entry = {'side': "credit", 'taxable': True, **CRYPTO}
+
 entry_template = {
     'debit': debit_quote_entry,
     'credit': credit_base_entry
@@ -11,7 +12,8 @@ entry_template = {
 class Sell(TaxableTx):
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(entry_template=entry_template, **kwargs)
+        kwargs['type'] = 'sell'
+        super().__init__(entry_template=entry_template.copy(), **kwargs)
         
         # if base asset isnt stable add to taxable assets
         if not self.assets['base'].is_fiat and not self.assets['base'].is_stable:

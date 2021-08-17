@@ -4,7 +4,6 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 import random
 from randomtimestamp.functions import randomtimestamp
-from src.crypto_accountant.utils import set_decimal
 import uuid
 
 import firebase_admin
@@ -35,13 +34,18 @@ class Fixes:
         all_transactions = []
         for raw in raw_transactions:
             trans = raw.to_dict()
-            for key in trans:
-                val = trans[key]
-                if isinstance(val, int) or isinstance(val, float):
-                    val = Decimal(str(val))
-                    trans[key] = val
             all_transactions.append(trans)
         return sorted(all_transactions, key=lambda x: x['timestamp'])
+
+    def firestore_user_transactions(firestore_ref, uid='903Rf3cVflW2bzWc8x1YL8E78gy1'):
+        trans_ref = firestore_ref.collection(u'transactions')
+        riley_trans = trans_ref.where(u'uid', u'==', u'903Rf3cVflW2bzWc8x1YL8E78gy1')
+        raw_transactions = riley_trans.get()
+        all_transactions = []
+        for raw in raw_transactions:
+            trans = raw.to_dict()
+            all_transactions.append(trans)
+        return sorted(all_transactions, key=lambda x: x['timestamp'])        
 
     def local_txs(file_path=''):
         file = file_path if file_path else os.path.dirname(os.path.realpath(__file__)) + "/example_txs.json"
@@ -59,11 +63,13 @@ class Fixes:
         short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
         long_buy_date = randomtimestamp(start_year=2018, text=False)
         sell_date = randomtimestamp(start=short_buy_date, text=False)
-        txs = [
-            TxnFactory.txn_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=0),
-            TxnFactory.txn_factory('sell', base_currency='btc', quote_currency='usd', timestamp=sell_date, base_usd_price=2000, quote_usd_price=1, quote_quantity=1000, taxable=True, base_quantity=.5, fee_quantity=0)
+        factory = TxnFactory()
+        buy = factory.generic_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=0)
+        sell = factory.generic_factory('sell', base_currency='btc', quote_currency='usd', timestamp=sell_date, base_usd_price=2000, quote_usd_price=1, quote_quantity=1000, taxable=True, base_quantity=.5, fee_quantity=0)
+        return [
+            buy,
+            sell,
         ]
-        return txs
 
     def test_new_buy_sell():
         short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
@@ -81,14 +87,17 @@ class Fixes:
         short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
         long_buy_date = randomtimestamp(start_year=2018, text=False)
         sell_date = randomtimestamp(start=short_buy_date, text=False)
-
-        buy = TxnFactory.txn_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=.01)
-        swap = TxnFactory.txn_factory('swap', base_currency='eth', quote_currency='btc', timestamp=sell_date, base_usd_price=2000, quote_usd_price=10000, base_quantity=1, quote_quantity=.2, fee_quantity=.01, taxable=True)
-        
+        factory = TxnFactory()
+        buy = factory.generic_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=.01)
+        swap = factory.generic_factory('swap', base_currency='eth', quote_currency='btc', timestamp=sell_date, base_usd_price=2000, quote_usd_price=10000, base_quantity=1, quote_quantity=.2, fee_quantity=.01, taxable=True)
         return [
-            Buy(**buy.to_dict),
-            Swap(**swap.to_dict),
+            buy,
+            swap,
         ]
+        # return [
+        #     Buy(**buy),
+        #     Swap(**swap),
+        # ]
 
     def test_sequence(qty=10):
         factory = TxnFactory()

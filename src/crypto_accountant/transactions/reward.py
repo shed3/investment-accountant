@@ -1,22 +1,24 @@
 from .base import BaseTx
-from .entry_config import CRYPTO, TRANSFERS_IN
+from .entry_config import CASH, CRYPTO, REWARDS
 
-debit_base_entry = {'side': "debit", **CRYPTO}
-credit_base_entry = {'side': "credit",  **TRANSFERS_IN}
+debit_crypto_base_entry = {'side': "debit", **CRYPTO}
+debit_cash_base_entry = {'side': "debit", **CASH}
+credit_base_entry = {'side': "credit",  **REWARDS}
 entry_template = {
-    'debit': debit_base_entry,
-    'credit': credit_base_entry
+    'credit': credit_base_entry,
+    'debit': debit_crypto_base_entry
 }
-
-class Receive(BaseTx):
+class Reward(BaseTx):
 
     def __init__(self, **kwargs) -> None:
-        kwargs['type'] = 'receive'
+        kwargs['type'] = 'reward'
         super().__init__(entry_template=entry_template.copy(), **kwargs)
     
     def get_affected_balances(self):
-        affected_balances = {}
         base = self.assets['base']
+        if base.is_fiat:
+            self.entry_template['debit'] = debit_cash_base_entry
+        affected_balances = {}
         affected_balances[base.symbol] = base.quantity
         if 'fee' in self.assets:
             fee = self.assets['fee']
