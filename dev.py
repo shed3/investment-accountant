@@ -10,10 +10,11 @@ from src.crypto_accountant.bookkeeper import BookKeeper
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
+
 pd.set_option("display.expand_frame_repr", False)
 pd.set_option("display.width", 0)
 pd.set_option('display.float_format', lambda x: '%.8f' % x)
-pd.set_option("display.max_colwidth", 20)
+pd.set_option("display.max_colwidth", 15)
 pd.set_option("display.max_rows", None)
 pd.set_option("display.min_rows", 100)
 pd.set_option("display.max_columns", 8)
@@ -61,7 +62,11 @@ start = datetime.now()
 bk = BookKeeper()
 bk.add_txs(txs, auto_detect=True)
 eq_curve = bk.ledger.generate_equity_curve('assets')
-print(eq_curve)
+journals = bk.ledger.all_account_journals
+
+print(bk.ledger.account_balances_timeseries['equities', 'revenues', 'realized_gains_losses', 'BTC'])
+# print(bk.ledger.account_balances_timeseries['equities', 'revenues', 'interest_earned_account', 'BTC'])
+
 
 # multiply qty df with price df and then sum them all into total
 # historical = get_historical_df(bk.ledger.symbols)
@@ -69,3 +74,21 @@ print(eq_curve)
 # val_curve['total'] = val_curve[bk.ledger.symbols].sum(axis=1)
 # print(val_curve['total'])
 print(datetime.now() - start)
+
+
+
+# TODO
+"""
+Account Journals - Index ['account_type', 'account', 'sub_account', 'timestamp'] - symbol?
+    Post Account Journal Balances to General Ledger at each transaction, maybe every day, could only save changes and ffill
+Trial Balance
+
+Adjusting Entries:
+    Accrue Receivables / Payables
+    Adjust to Fair Value
+    Post to General Journal
+General Journal - All adjusting entries, same index as account journals.
+Post general journal account balances to general ledger
+General Ledger - Indexed the same, but only has one entry per timestamp (summarized)
+Adjusted Trial Balance
+"""

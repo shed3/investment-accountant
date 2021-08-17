@@ -26,8 +26,7 @@ class Ledger:
     @property
     def raw(self):
         """
-        All entries grouped by timestamp and id.
-        Useful for ordering chronological. 
+
 
         Returns:
             DataFrame: Unindexed DataFrame
@@ -41,7 +40,8 @@ class Ledger:
     @property
     def simple(self):
         """
-        Values from self.raw with na values filled
+        All entries grouped by timestamp and id.
+        Useful for ordering chronological. 
 
         Returns:
             DataFrame: DataFrame with index ['timestamp', 'id']
@@ -50,16 +50,52 @@ class Ledger:
 
     
     @property
-    def accounts(self):
+    def all_account_journals(self):
         """
-        All entries broken down to sub account.
-        Useful for grouping entries by specific accounts.
+        All journal entries indexed down to sub account, symbol, timestamp. Used to derive account_balances for initial trial balance.
 
         Returns:
-            DataFrame: DataFrame with index ['account', 'sub_account', 'timestamp', 'type', 'symbol']
+            DataFrame: DataFrame with index ['account_type', 'account', 'sub_account', 'symbol']
         """
         return self.apply_index(self.simple, 
-            ['account_type', 'account', 'sub_account', 'timestamp', 'type', 'symbol'])
+            ['account_type', 'account', 'sub_account', 'symbol', 'timestamp'])
+
+    @property
+    def account_balances(self):
+        """
+        Summarized account_journals. Posted to general ledger with timestamp index. Used for trial balance before adjusting entries.
+
+        Returns:
+            DataFrame: DataFrame with index ['account_type', 'account', 'sub_account'] columns [symbols] value sum.
+        """
+        ledger = self.add_balance(self.all_account_journals)
+        summary_symbol = (ledger
+            .groupby(['account_type', 'account', 'sub_account', 'symbol'])['balance']
+            .apply(lambda x: x.sum())
+            .reset_index()
+            .pivot(['account_type', 'account', 'sub_account'], 'symbol', 'balance')
+        )
+        return summary_symbol
+
+    @property
+    def account_balances_timeseries(self):
+        """
+        Summarized account_journals. Posted to general ledger with timestamp index. Used for trial balance before adjusting entries.
+
+        Returns:
+            DataFrame: DataFrame with index ['account_type', 'account', 'sub_account'] columns [symbols] value sum.
+        """
+        ledger = self.add_balance(self.all_account_journals)
+        timeseries_summary = (ledger
+            .groupby(['account_type', 'account', 'sub_account', 'symbol', 'timestamp'])['balance']
+            .apply(lambda x: x.sum())
+            .reset_index()
+            .pivot('timestamp', ['account_type', 'account', 'sub_account', 'symbol'], 'balance')                
+            .fillna(Decimal(0))
+            .cumsum()
+        )
+        return timeseries_summary
+
 
     @property
     def symbols(self):
@@ -100,12 +136,6 @@ class Ledger:
             ledger.fillna(0, inplace=True)
         ledger.set_index(index, inplace=True)
         return ledger.sort_index()
-
-    def summarize(self, ledger, index=['account_type', 'account', 'sub_account']):
-        ledger = self.apply_index(ledger, index, fill=True)
-        ledger = ledger.groupby(level=-1).sum(numeric_only=False)
-        ledger = self.add_balance(ledger)
-        return ledger
 
     def generate_equity_curve(self, account_type):
         # calculate debit and credit qty balanaces for given account type
@@ -154,6 +184,12 @@ class Ledger:
         return eq_curve
 
     def add_balance(self, ledger):
+        ledger['debit_quantity'] = ledger['quantity'].where(ledger['side'] == 'debit' , 0)
+        ledger['debit_value'] = ledger['value'].where(ledger['side'] == 'debit' , 0)
+
+        ledger['credit_quantity'] = ledger['quantity'].where(ledger['side'] == 'credit', 0)
+        ledger['credit_value'] = ledger['value'].where(ledger['side'] == 'credit', 0)
+
         ledger['debit_balance'] = ledger['debit_value'] - ledger['credit_value']
         ledger['credit_balance'] = ledger['credit_value'] - ledger['debit_value']
         ledger['debit_balance_quantity'] = ledger['debit_quantity'] - ledger['credit_quantity']
