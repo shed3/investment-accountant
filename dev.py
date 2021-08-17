@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pystore
 from decimal import Decimal
-from tests.fixtures import Fixes
+from tests.example_txs import no_fee_no_positions, usd_fee_no_positions, in_kind_fee_no_positions, no_fee_with_positions, no_fee_with_positions_taxable
 from src.crypto_accountant.bookkeeper import BookKeeper
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -22,9 +22,16 @@ pd.set_option("display.max_columns", 8)
 # txs = TxnFactory.hardcoded_txs()
 
 # Firebase Transactions
-firestore_cred_file = Fixes.firestore_cred_file(Fixes.storage_dir())
-firestore_ref = Fixes.firestore_ref(firestore_cred_file)
-txs = Fixes.firestore_user_transactions(firestore_ref)
+# firestore_cred_file = Fixes.firestore_cred_file(Fixes.storage_dir())
+# firestore_ref = Fixes.firestore_ref(firestore_cred_file)
+# txs = Fixes.firestore_user_transactions(firestore_ref)
+# txs = no_fee_no_positions()
+# txs = usd_fee_no_positions()
+# txs = in_kind_fee_no_positions()
+# txs = no_fee_with_positions()
+txs = no_fee_with_positions_taxable()
+
+
 
 # Pystore historical data
 pystore.set_path("/Volumes/CAPA/.storage")
@@ -61,7 +68,17 @@ start = datetime.now()
 bk = BookKeeper()
 bk.add_txs(txs, auto_detect=True)
 eq_curve = bk.ledger.generate_equity_curve('assets')
+
+print('Raw Ledger')
+print(bk.ledger.raw.sort_values('timestamp'))
+
+
 print(eq_curve)
+print(bk.ledger.summarize(bk.ledger.raw))
+
+
+
+
 
 # multiply qty df with price df and then sum them all into total
 # historical = get_historical_df(bk.ledger.symbols)

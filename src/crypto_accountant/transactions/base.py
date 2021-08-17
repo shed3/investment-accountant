@@ -52,7 +52,7 @@ class BaseTx:
             elif 'quote_currency' in kwargs and kwargs['fee_currency'] == kwargs['quote_currency']:
                 kwargs['fee_usd_price'] = kwargs['quote_usd_price']
             self.add_asset("fee", **kwargs)
-            if self.assets['fee'].is_stable and not self.assets['fee'].is_fiat:
+            if not self.assets['fee'].is_fiat:
                 self.fee_entry_template['credit'] = stable_credit_fee_entry.copy()
             self.total += self.assets['fee'].usd_value
 

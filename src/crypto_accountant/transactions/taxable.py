@@ -40,7 +40,7 @@ class TaxableTx(BaseTx):
                     # this fee entry is also suspicious when I changed it, kayne
                 }
                 self.fee_entry_template = fee_entries.copy()  # set credit entry to use crypto account
-            if not self.assets['fee'].is_stable:
+            # if not self.assets['fee'].is_stable:
                 self.add_taxable_asset('fee', fee_entries.copy())
 
     def add_taxable_asset(self, name, entry_template):

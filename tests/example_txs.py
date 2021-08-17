@@ -58,10 +58,10 @@ def no_fee_no_positions():
         'timestamp': datetime(year=2018, month=1, day=4),
         'id': uuid.uuid4(),
         'base_currency': 'btc',
-        'base_quantity': Decimal(1.00000000),
+        'base_quantity': Decimal(2.00000000),
         'base_usd_price': Decimal(500.00),
         'quote_currency': 'usdc',
-        'quote_quantity': Decimal(500.000000),
+        'quote_quantity': Decimal(1000.000000),
         'quote_usd_price': Decimal(1.00),
     }
 
@@ -71,9 +71,9 @@ def no_fee_no_positions():
         'timestamp': datetime(year=2018, month=2, day=1),
         'id': uuid.uuid4(),
         'base_currency': 'usd',
-        'base_quantity': Decimal(20.00),
+        'base_quantity': Decimal(25.00),
         'base_usd_price': Decimal(1.00),
-    }
+    } 
 
     # Reward $20 USDC
     reward_usdc = {
@@ -102,7 +102,7 @@ def no_fee_no_positions():
         'base_currency': 'usd',
         'base_quantity': Decimal(20.00),
         'base_usd_price': Decimal(1.00),
-    }
+    } # Producing a cryptocurrency entry instead of cash.
 
     # Receive $20 USDC
     receive_usdc = {
@@ -127,18 +127,27 @@ def no_fee_no_positions():
 
 
 def usd_fee_no_positions():
-
-
+    """
+    NOT TAXABLE TXS (currently not configured to have taxable fees. Works with USD fees as shown below, but will probably never exist in the wild.)
+    * receive
+    * reward
+    * interest-in-account
+    * interest-in-stake
+    """
+    # Deposit 10,000 USD, 2 USD Fee (unrealistic sometimes)
     deposit_initial = {
         'type': 'deposit',
         'timestamp': datetime(year=2018, month=1, day=1),
         'id': uuid.uuid4(),
         'base_currency': 'usd',
         'base_quantity': Decimal(10000.00),
-        'base_usd_price': Decimal(1.00)
+        'base_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
     }
 
-    # Buy 9,000 USDC
+    # Buy 9,000 USDC, 2 USD Fee (unrealistic sometimes)
     buy_usdc = {
         'type': 'buy',
         'timestamp': datetime(year=2018, month=1, day=2),
@@ -149,9 +158,12 @@ def usd_fee_no_positions():
         'quote_currency': 'usd',
         'quote_quantity': Decimal(9000.00),
         'quote_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
     }
 
-    # Buy $500 of bitcoin with USD
+    # Buy $500 of bitcoin with USD, 2 USD Fee (unrealistic sometimes)
     buy_btc = {
         'type': 'buy',
         'timestamp': datetime(year=2018, month=1, day=3),
@@ -162,9 +174,12 @@ def usd_fee_no_positions():
         'quote_currency': 'usd',
         'quote_quantity': Decimal(500.00),
         'quote_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
     }
 
-    # Swap $1000 of bitcoin with USDC
+    # Swap $1000 of bitcoin with USDC, 2 USD Fee (unrealistic sometimes)
     swap_btc_usdc = {
         'type': 'swap',
         'timestamp': datetime(year=2018, month=1, day=4),
@@ -175,9 +190,12 @@ def usd_fee_no_positions():
         'quote_currency': 'usdc',
         'quote_quantity': Decimal(500.000000),
         'quote_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
     }
 
-    # Reward $20 USD
+    # Reward $20 USD, 2 USD Fee (unrealistic sometimes)
     reward_usd = {
         'type': 'reward',
         'timestamp': datetime(year=2018, month=2, day=1),
@@ -185,9 +203,12 @@ def usd_fee_no_positions():
         'base_currency': 'usd',
         'base_quantity': Decimal(20.00),
         'base_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
     }
 
-    # Reward $20 USDC
+    # Reward $20 USDC, 2 USD Fee (unrealistic sometimes)
     reward_usdc = {
         'type': 'reward',
         'timestamp': datetime(year=2018, month=2, day=1),
@@ -195,8 +216,11 @@ def usd_fee_no_positions():
         'base_currency': 'usdc',
         'base_quantity': Decimal(20.00),
         'base_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
     }
-    # Reward $20 BTC
+    # Reward $20 BTC, 2 USD Fee (unrealistic sometimes)
     reward_btc = {
         'type': 'reward',
         'timestamp': datetime(year=2018, month=2, day=1),
@@ -204,9 +228,12 @@ def usd_fee_no_positions():
         'base_currency': 'btc',
         'base_quantity': Decimal(0.00100000),
         'base_usd_price': Decimal(750.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
     }
 
-    # Receive $20 USD
+    # Receive $20 USD, 2 USD Fee (unrealistic sometimes)
     receive_usd = {
         'type': 'receive',
         'timestamp': datetime(year=2018, month=3, day=1),
@@ -214,9 +241,12 @@ def usd_fee_no_positions():
         'base_currency': 'usd',
         'base_quantity': Decimal(20.00),
         'base_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
     }
 
-    # Receive $20 USDC
+    # Receive $20 USDC, 2 USD Fee (unrealistic sometimes)
     receive_usdc = {
         'type': 'receive',
         'timestamp': datetime(year=2018, month=3, day=1),
@@ -224,8 +254,11 @@ def usd_fee_no_positions():
         'base_currency': 'usdc',
         'base_quantity': Decimal(20.00),
         'base_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
     }
-    # Receive $20 BTC
+    # Receive $20 BTC, 2 USD Fee (unrealistic sometimes)
     receive_btc = {
         'type': 'receive',
         'timestamp': datetime(year=2018, month=3, day=1),
@@ -233,53 +266,250 @@ def usd_fee_no_positions():
         'base_currency': 'btc',
         'base_quantity': Decimal(0.00100000),
         'base_usd_price': Decimal(750.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
     }    
-    # Deposit 10,000 USD, .99 USD Fee
-    # Buy 9,000 USDC, .99 USD Fee
-    # Buy $500 of bitcoin with USD, .99 USD Fee
-    # Buy $1000 of bitcoin with USDC, .99 USD Fee
-    # Reward $20 USD , .99 USD Fee
-    # Reward $20 USDC , .99 USD Fee
-    # Reward $20 BTC , .99 USD Fee
-    # Receive $20 USD , .99 USD Fee
-    # Receive $20 USDC , .99 USD Fee
-    # Receive $20 BTC , .99 USD Fee
 
-    return
 
+    return [deposit_initial, buy_usdc, buy_btc, swap_btc_usdc, reward_usd, reward_usdc, reward_btc, receive_usd, receive_usdc, receive_btc]
 
 def in_kind_fee_no_positions():
-    # This scenario will need to deduct the fee from the new position it is opening, since it can not close it out. These are only receive type transactions with no previous transactions.
+    """
+    NOT TAXABLE TXS (currently not configured to have taxable fees. Works with USD fees, but will probably never exist in the wild.)
+    * receive
+    * reward
+    * interest-in-account
+    * interest-in-stake
 
-    # Deposit 10,000 USD, .99 USD Fee
-    # Buy 9,000 USDC, .99 USDC Fee
-    # Buy $500 of bitcoin with USD, .99 USD Fee
-    # Buy $1000 of bitcoin with USDC, .99 USDC Fee
-    # Reward $20 USD , .99 USD Fee
-    # Reward $20 USDC , .99 USDC Fee
-    # Reward $20 BTC , .99 BTC Fee
-    # Receive $20 USD , .99 USD Fee
-    # Receive $20 USDC , .99 USDC Fee
-    # Receive $20 BTC , .99 BTC Fee
+    Returns:
+        [type]: [description]
+    """
+    # Deposit 10,000 USD, 2 USD Fee (unrealistic sometimes)
+    deposit_initial = {
+        'type': 'deposit',
+        'timestamp': datetime(year=2018, month=1, day=1),
+        'id': uuid.uuid4(),
+        'base_currency': 'usd',
+        'base_quantity': Decimal(10000.00),
+        'base_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
+    }
 
-    return
+    # Buy 9,000 USDC, 2 usdc Fee (unrealistic sometimes)
+    buy_usdc = {
+        'type': 'buy',
+        'timestamp': datetime(year=2018, month=1, day=2),
+        'id': uuid.uuid4(),
+        'base_currency': 'usdc',
+        'base_quantity': Decimal(9000.000000),
+        'base_usd_price': Decimal(1.00),
+        'quote_currency': 'usd',
+        'quote_quantity': Decimal(9000.00),
+        'quote_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
+    } # Does not currently credit current assets crypto. Need a USDC position.
 
+    # Buy $500 of bitcoin with USD, $2 btc Fee (unrealistic sometimes)
+    buy_btc = {
+        'type': 'buy',
+        'timestamp': datetime(year=2018, month=1, day=3),
+        'id': uuid.uuid4(),
+        'base_currency': 'btc',
+        'base_quantity': Decimal(1.00000000),
+        'base_usd_price': Decimal(500.00),
+        'quote_currency': 'usd',
+        'quote_quantity': Decimal(500.00),
+        'quote_usd_price': Decimal(1.00),
+        'fee_currency': 'usd',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
+    } # Does not currently credit current assets crypto. Need a btc position.
+
+    # Swap $1000 of bitcoin with USDC, $2 btc Fee (unrealistic sometimes)
+    swap_btc_usdc = {
+        'type': 'swap',
+        'timestamp': datetime(year=2018, month=1, day=4),
+        'id': uuid.uuid4(),
+        'base_currency': 'btc',
+        'base_quantity': Decimal(1.00000000),
+        'base_usd_price': Decimal(500.00),
+        'quote_currency': 'usdc',
+        'quote_quantity': Decimal(500.000000),
+        'quote_usd_price': Decimal(1.00),
+        'fee_currency': 'btc',
+        'fee_quantity': Decimal(.004),
+        'fee_usd_price': Decimal(500.00),
+    }
+
+    # Swap $1000 of bitcoin with USDC, $2 usdc Fee (unrealistic sometimes)
+    swap_btc_usdc_fee = {
+        'type': 'swap',
+        'timestamp': datetime(year=2018, month=1, day=4),
+        'id': uuid.uuid4(),
+        'base_currency': 'btc',
+        'base_quantity': Decimal(1.00000000),
+        'base_usd_price': Decimal(500.00),
+        'quote_currency': 'usdc',
+        'quote_quantity': Decimal(500.000000),
+        'quote_usd_price': Decimal(1.00),
+        'fee_currency': 'usdc',
+        'fee_quantity': Decimal(2),
+        'fee_usd_price': Decimal(1.00),
+    }
+
+    return [deposit_initial, buy_usdc, buy_btc, swap_btc_usdc, swap_btc_usdc_fee]
 
 def no_fee_with_positions():
-    # Deposit 10,000 USD
-    # Buy 9,000 USDC
-    # Buy $500 of bitcoin with USD
-    # Buy $1000 of bitcoin with USDC
-    # Reward $20 USD
+    og_txs = no_fee_no_positions()
+    new_txs = no_fee_no_positions().copy()
+    for tx in new_txs:
+        tx['timestamp'] = tx['timestamp'].replace(year=tx['timestamp'].year + 1)
+
+    interest_in_account_usd = {
+        'type': 'interest-in-account',
+        'timestamp': datetime(year=2019, month=2, day=1),
+        'id': uuid.uuid4(),
+        'base_currency': 'usd',
+        'base_quantity': Decimal(25.00),
+        'base_usd_price': Decimal(1.00),
+    } 
+
     # Reward $20 USDC
+    interest_in_account_usdc = {
+        'type': 'interest-in-account',
+        'timestamp': datetime(year=2019, month=2, day=2),
+        'id': uuid.uuid4(),
+        'base_currency': 'usdc',
+        'base_quantity': Decimal(20.00),
+        'base_usd_price': Decimal(1.00),
+    }
     # Reward $20 BTC
-    # Receive $20 USD
-    # Receive $20 USDC
-    # Receive $20 BTC
-    # Interest Account $0.50 BTC x 10 @ different prices
-    # Interest Stake $2.00 BTC x 5 at different prices
-    # Interest Account $5.00 USDC x 10 @ different prices
-    # Interest Stake $20.00 USDC x 5 at different prices
+    interest_in_account_btc = {
+        'type': 'interest-in-account',
+        'timestamp': datetime(year=2019, month=2, day=3),
+        'id': uuid.uuid4(),
+        'base_currency': 'btc',
+        'base_quantity': Decimal(0.00100000),
+        'base_usd_price': Decimal(2500.00),
+    }
+
+    interest_in_stake_usd = {
+        'type': 'interest-in-stake',
+        'timestamp': datetime(year=2019, month=3, day=1),
+        'id': uuid.uuid4(),
+        'base_currency': 'usd',
+        'base_quantity': Decimal(25.00),
+        'base_usd_price': Decimal(1.00),
+    } 
+
+    # Reward $20 USDC
+    interest_in_stake_usdc = {
+        'type': 'interest-in-stake',
+        'timestamp': datetime(year=2019, month=3, day=2),
+        'id': uuid.uuid4(),
+        'base_currency': 'usdc',
+        'base_quantity': Decimal(20.00),
+        'base_usd_price': Decimal(1.00),
+    }
+    # Reward $20 BTC
+    interest_in_stake_btc = {
+        'type': 'interest-in-stake',
+        'timestamp': datetime(year=2019, month=3, day=3),
+        'id': uuid.uuid4(),
+        'base_currency': 'btc',
+        'base_quantity': Decimal(0.00100000),
+        'base_usd_price': Decimal(2750.00),
+    }
+    return og_txs + new_txs + [interest_in_account_usd, interest_in_account_usdc, interest_in_account_btc, interest_in_stake_usd, interest_in_stake_usdc, interest_in_stake_btc]
+
+def no_fee_with_positions_taxable():
+
+    # Sell $100 BTC short term
+    sell_btc_short_gain = {
+            'type': 'sell',
+            'timestamp': datetime(year=2018, month=1, day=6),
+            'id': uuid.uuid4(),
+            'base_currency': 'btc',
+            'base_quantity': Decimal(0.2),
+            'base_usd_price': Decimal(600.00),
+            'quote_currency': 'usd',
+            'quote_quantity': Decimal(120.00),
+            'quote_usd_price': Decimal(1.00),
+    }    
+
+    # Sell $100 BTC long term
+    sell_btc_long = {
+            'type': 'sell',
+            'timestamp': datetime(year=2020, month=1, day=6),
+            'id': uuid.uuid4(),
+            'base_currency': 'btc',
+            'base_quantity': Decimal(0.01),
+            'base_usd_price': Decimal(10000.00),
+            'quote_currency': 'usd',
+            'quote_quantity': Decimal(100.00),
+            'quote_usd_price': Decimal(1.00),
+    }
+
+    # Swap $400 of bitcoin with eth short term
+    swap_btc_eth_short = {
+            'type': 'swap',
+            'timestamp': datetime(year=2018, month=1, day=8),
+            'id': uuid.uuid4(),
+            'base_currency': 'eth',
+            'base_quantity': Decimal(2),
+            'base_usd_price': Decimal(200.00),
+            'quote_currency': 'btc',
+            'quote_quantity': Decimal(0.8),
+            'quote_usd_price': Decimal(500.00),
+    }    
+
+    # Swap $400 of bitcoin with eth
+    swap_btc_eth_long = {
+            'type': 'swap',
+            'timestamp': datetime(year=2020, month=1, day=8),
+            'id': uuid.uuid4(),
+            'base_currency': 'eth',
+            'base_quantity': Decimal(2),
+            'base_usd_price': Decimal(200.00),
+            'quote_currency': 'btc',
+            'quote_quantity': Decimal(0.04),
+            'quote_usd_price': Decimal(10000.00),
+    }
+
+    # Sell $100 BTC short term
+    send_btc_short = {
+            'type': 'send',
+            'timestamp': datetime(year=2018, month=1, day=9),
+            'id': uuid.uuid4(),
+            'base_currency': 'btc',
+            'base_quantity': Decimal(0.2),
+            'base_usd_price': Decimal(500.00),
+            'quote_currency': 'usd',
+            'quote_quantity': Decimal(100.00),
+            'quote_usd_price': Decimal(1.00),
+    }    
+
+    # Sell $100 BTC long term
+    send_btc_long = {
+            'type': 'send',
+            'timestamp': datetime(year=2020, month=1, day=9),
+            'id': uuid.uuid4(),
+            'base_currency': 'btc',
+            'base_quantity': Decimal(0.01),
+            'base_usd_price': Decimal(10000.00),
+            'quote_currency': 'usd',
+            'quote_quantity': Decimal(100.00),
+            'quote_usd_price': Decimal(1.00),
+    }
+    
+
+    return no_fee_no_positions() + [sell_btc_short_gain, sell_btc_long, swap_btc_eth_short, swap_btc_eth_long, send_btc_short, send_btc_long]
+
 
     # Swap $200 BTC for USDC - short term
     # Sell $500 BTC for USD - short term
@@ -288,7 +518,6 @@ def no_fee_with_positions():
     # Sell $500 BTC for USD - long term
     # Sell $250 BTC for ETH - long term
 
-    return
 
     # initial 10,000 deposit. Cash 10,000, Invested Capital 10,000
     date = datetime(year=2018, month=1, day=1)
@@ -324,14 +553,14 @@ def no_fee_with_positions():
         'timestamp': date,
         'id': uuid.uuid4(),
         'base_currency': 'btc',
-        'base_quantity': check_type(1.000000000000),
-        'base_usd_price': check_type(2000.00),
+        'base_quantity': Decimal(1.000000000000),
+        'base_usd_price': Decimal(2000.00),
         # 'fee_currency': 'usd',
-        # 'fee_quantity': check_type(2.99),
-        # 'fee_usd_price': check_type(1.00),
+        # 'fee_quantity': Decimal(2.99),
+        # 'fee_usd_price': Decimal(1.00),
         'quote_currency': 'usd',
-        'quote_quantity': check_type(1.000000000000) * check_type(2000.00),
-        'quote_usd_price': check_type(1.00),
+        'quote_quantity': Decimal(1.000000000000) * Decimal(2000.00),
+        'quote_usd_price': Decimal(1.00),
     })
     txs.append(short_term_btc_sell_gain)
 
@@ -342,14 +571,14 @@ def no_fee_with_positions():
         'timestamp': date,
         'id': uuid.uuid4(),
         'base_currency': 'btc',
-        'base_quantity': check_type(1.000000000000),
-        'base_usd_price': check_type(4000.00),
+        'base_quantity': Decimal(1.000000000000),
+        'base_usd_price': Decimal(4000.00),
         'fee_currency': 'usd',
-        'fee_quantity': check_type(2.99),
-        'fee_usd_price': check_type(1.00),
+        'fee_quantity': Decimal(2.99),
+        'fee_usd_price': Decimal(1.00),
         'quote_currency': 'usd',
-        'quote_quantity': check_type(1.000000000000) * check_type(4000.00),
-        'quote_usd_price': check_type(1.00),
+        'quote_quantity': Decimal(1.000000000000) * Decimal(4000.00),
+        'quote_usd_price': Decimal(1.00),
     })
     txs.append(long_term_btc_sell_gain)
 
@@ -360,14 +589,14 @@ def no_fee_with_positions():
         'timestamp': date,
         'id': uuid.uuid4(),
         'base_currency': 'eth',
-        'base_quantity': check_type(10.000000000000),
-        'base_usd_price': check_type(50.00),
+        'base_quantity': Decimal(10.000000000000),
+        'base_usd_price': Decimal(50.00),
         'fee_currency': 'btc',
-        'fee_quantity': check_type(.001),
-        'fee_usd_price': check_type(500.00),
+        'fee_quantity': Decimal(.001),
+        'fee_usd_price': Decimal(500.00),
         'quote_currency': 'btc',
-        'quote_quantity': check_type(1.000000000000),
-        'quote_usd_price': check_type(500.00),
+        'quote_quantity': Decimal(1.000000000000),
+        'quote_usd_price': Decimal(500.00),
     })
     txs.append(long_term_btc_swap_loss)
 

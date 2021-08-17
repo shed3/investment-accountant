@@ -103,8 +103,8 @@ class Ledger:
 
     def summarize(self, ledger, index=['account_type', 'account', 'sub_account']):
         ledger = self.apply_index(ledger, index, fill=True)
-        ledger = ledger.groupby(level=-1).sum(numeric_only=False)
         ledger = self.add_balance(ledger)
+        ledger = ledger.groupby(level=-1).sum(numeric_only=False)
         return ledger
 
     def generate_equity_curve(self, account_type):
@@ -154,10 +154,10 @@ class Ledger:
         return eq_curve
 
     def add_balance(self, ledger):
-        ledger['debit_balance'] = ledger['debit_value'] - ledger['credit_value']
-        ledger['credit_balance'] = ledger['credit_value'] - ledger['debit_value']
-        ledger['debit_balance_quantity'] = ledger['debit_quantity'] - ledger['credit_quantity']
-        ledger['credit_balance_quantity'] = ledger['credit_quantity'] - ledger['debit_quantity']        
+        ledger['debit_balance'] = ledger['value'].where(ledger['side'] == 'debit', Decimal(0))
+        ledger['debit_balance_quantity'] = ledger['quantity'].where(ledger['side'] == 'debit', Decimal(0))
+        ledger['credit_balance'] = ledger['value'].where(ledger['side'] == 'credit', Decimal(0))
+        ledger['credit_balance_quantity'] = ledger['quantity'].where(ledger['side'] == 'credit', Decimal(0))
         if 'account_type' in ledger.columns:
             ledger['balance'] = ledger['credit_balance'].where(ledger['account_type'] != 'assets', ledger['debit_balance'])
             ledger['balance_quantity'] = ledger['credit_balance_quantity'].where(ledger['account_type'] != 'assets', ledger['debit_balance_quantity'])
