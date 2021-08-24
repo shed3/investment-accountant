@@ -2,9 +2,9 @@ from .base import BaseTx
 from .entry_config import CRYPTO, REALIZED_GAIN_LOSS, UNREALIZED_GAIN_LOSS, CRYPTO_FAIR_VALUE_ADJ
 
 # first, adjust to market and accrue unrealized gains.
-adj_fair_value = {'side': "debit", 'type': 'adjust', 'quantity': 0, **CRYPTO_FAIR_VALUE_ADJ}
-adj_unrealized_gains = {'side': "credit", 'type': 'adjust', 'quantity': 0, **UNREALIZED_GAIN_LOSS}
-adj_to_fair_value_entries = [adj_fair_value, adj_unrealized_gains]
+# adj_fair_value = {'side': "debit", 'type': 'adjust', 'quantity': 0, **CRYPTO_FAIR_VALUE_ADJ}
+# adj_unrealized_gains = {'side': "credit", 'type': 'adjust', 'quantity': 0, **UNREALIZED_GAIN_LOSS}
+# adj_to_fair_value_entries = [adj_fair_value, adj_unrealized_gains]
 
 
 # close crypto (init), adj(change), and open new cash/crypto (total) -- last out of scope of base taxable
@@ -25,10 +25,9 @@ credit_fee_entry = {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CRYPTO}
 class TaxableTx(BaseTx):
     # Each taxable transaction entry should have the correct open quote, close quote, and current quote added. This will allow us to automatically derive gains, tax and (I think) equity curve
 
-    def __init__(self, adj_entries=adj_to_fair_value_entries, close_entries=close_credit_entries, gain_entries=close_gain_entries, **kwargs) -> None:
+    def __init__(self, close_entries=close_credit_entries, gain_entries=close_gain_entries, **kwargs) -> None:
         super().__init__(**kwargs)
         self.taxable_assets = {}
-        self.adj_entries = adj_entries
         self.close_entries = close_entries
         self.gain_entries = gain_entries
         if 'fee' in self.assets.keys():
@@ -63,16 +62,6 @@ class TaxableTx(BaseTx):
         change_val = closing_val - open_val
         all_entries = []
         # entries are the same otherwise, so for loop
-        for entry in self.adj_entries:
-            adj_config = {
-                **entry,
-                'mkt': asset,
-                'quote': tx_asset.usd_price,
-                'value': change_val,
-            }
-
-            all_entries.append(self.create_entry(**adj_config))
-
         close_cost_basis_entry = self.close_entries[0]
         close_fair_value_entry = self.close_entries[1]
         # 2. close crypto and fair value

@@ -12,12 +12,20 @@ class Entry:
         self.symbol = kwargs.get('symbol', '')
         self.side = kwargs.get('side', '')
         self.type = kwargs.get('type', '')
-
         # setters will ensure Decimal conversion
         self.quantity = kwargs.get('quantity', 0)
         self.value = kwargs.get('value', 0)
         self.quote = kwargs.get('quote', 0)
         self.close_quote = kwargs.get('close_quote', 0)
+
+        if self.quantity < 0 or self.value < 0:
+            self.side = 'debit' if self.side == 'credit' else 'credit'
+            self.quantity = abs(self.quantity)
+            self.value = abs(self.value)
+
+        if self.quantity <= 0 or self.value <= 0:
+            self.quantity = abs(self.quantity)
+            self.value = abs(self.value)            
 
     @property
     def quantity(self):

@@ -7,22 +7,19 @@ from .utils import check_type, create_tx
 
 
 class BookKeeper:
-    def __init__(self) -> None:
+    def __init__(self, period) -> None:
         self.positions = {'usd': Position('usd')}
         self.ledger = Ledger()
         self.tax_rates = {'long': check_type(.25), 'short': check_type(.4)}
 
-    def add_txs(self, txs, auto_detect=True):
-        transactions = sorted(txs, key=lambda x: dict(x).get('timestamp'))
-        for tx in transactions:
-            self.add_tx(tx, auto_detect)
+    def detect_type(self, tx):
+        # if auto detect is allowed and the tx arg isnt already some form of BaseTx
+        # create an instance of the correct tx class based on tx data
+        if not isinstance(tx, BaseTx):
+            tx = create_tx(**tx)
+        return tx
 
-    def add_tx(self, tx, auto_detect=True):
-        if auto_detect:
-            # if auto detect is allowed and the tx arg isnt already some form of BaseTx
-            # create an instance of the correct tx class based on tx data
-            if not isinstance(tx, BaseTx):
-                tx = create_tx(**tx)
+    def _position_check(self, tx):
         # create position from base_currency if needed
         if tx.assets['base'].symbol not in self.positions:
             self.positions[tx.assets['base'].symbol] = Position(
@@ -33,6 +30,15 @@ class BookKeeper:
             self.positions[tx.assets['quote'].symbol] = Position(
                 tx.assets['quote'].symbol)
 
+    def add_txs(self, txs, auto_detect=True):
+        transactions = sorted(txs, key=lambda x: dict(x).get('timestamp'))
+        for tx in transactions:
+            self.add_tx(tx, auto_detect)
+
+    def add_tx(self, tx, auto_detect=True):
+        if auto_detect:
+            tx = self.detect_type(tx)
+        self._position_check(tx)
         if tx.taxable:
             entries = self.process_taxable(tx)
         else:

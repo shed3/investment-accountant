@@ -118,3 +118,19 @@ class BaseTx:
         entry_configs = kwargs.get("config", self.entry_template)
         fee_configs = kwargs.get("fee_config", self.fee_entry_template)
         return self.create_entries(entry_configs, fee_configs)
+
+    def adj_to_mkt(self, price, qty, date):
+        all_entries = []
+        # entries are the same otherwise, so for loop
+        adjustable_assets = list([key for key, val in self.assets.items() if not val.is_stable])
+        for adj_asset in adjustable_assets:
+            val_change = self.assets[adj_asset].usd_value - 
+            for entry in self.adj_entries:
+                adj_config = {
+                    **entry,
+                    'mkt': adj_asset,
+                    'quote': price,
+                    'value': change_val,
+                }
+
+            all_entries.append(self.create_entry(**adj_config))
