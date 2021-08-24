@@ -61,18 +61,19 @@ start = datetime.now()
 # initialize bookkeeper
 bk = BookKeeper()
 bk.add_txs(txs, auto_detect=True)
-eq_curve = bk.ledger.generate_equity_curve('assets')
-journals = bk.ledger.all_account_journals
+eq_curve = bk.ledger.generate_equity_curve(['account_type', 'symbol'], 'balance_quantity')['assets']
+print(eq_curve)
 
-print(bk.ledger.account_balances_timeseries['equities', 'revenues', 'realized_gains_losses', 'BTC'])
+# journals = bk.ledger.all_account_journals
+# print(bk.ledger.account_balances_timeseries)
 # print(bk.ledger.account_balances_timeseries['equities', 'revenues', 'interest_earned_account', 'BTC'])
 
 
 # multiply qty df with price df and then sum them all into total
-# historical = get_historical_df(bk.ledger.symbols)
-# val_curve = eq_curve.mul(historical)
-# val_curve['total'] = val_curve[bk.ledger.symbols].sum(axis=1)
-# print(val_curve['total'])
+historical = get_historical_df(bk.ledger.symbols)
+val_curve = eq_curve.mul(historical)
+val_curve['total'] = val_curve[bk.ledger.symbols].sum(axis=1)
+print(val_curve['total'])
 print(datetime.now() - start)
 
 

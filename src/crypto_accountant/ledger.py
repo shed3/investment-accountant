@@ -70,10 +70,10 @@ class Ledger:
         """
         ledger = self.add_balance(self.all_account_journals)
         summary_symbol = (ledger
-            .groupby(['account_type', 'account', 'sub_account', 'symbol'])['balance']
+            .groupby(['account_type', 'account', 'sub_account', 'symbol'])['balance_quantity']
             .apply(lambda x: x.sum())
             .reset_index()
-            .pivot(['account_type', 'account', 'sub_account'], 'symbol', 'balance')
+            .pivot(['account_type', 'account', 'sub_account'], 'symbol', 'balance_quantity')
         )
         return summary_symbol
 
@@ -87,15 +87,14 @@ class Ledger:
         """
         ledger = self.add_balance(self.all_account_journals)
         timeseries_summary = (ledger
-            .groupby(['account_type', 'account', 'sub_account', 'symbol', 'timestamp'])['balance']
+            .groupby(['account_type', 'account', 'sub_account', 'symbol', 'timestamp'])['balance_quantity']
             .apply(lambda x: x.sum())
             .reset_index()
-            .pivot('timestamp', ['account_type', 'account', 'sub_account', 'symbol'], 'balance')                
+            .pivot('timestamp', ['account_type', 'account', 'sub_account', 'symbol'], 'balance_quantity')                
             .fillna(Decimal(0))
             .cumsum()
         )
         return timeseries_summary
-
 
     @property
     def symbols(self):
@@ -137,24 +136,25 @@ class Ledger:
         ledger.set_index(index, inplace=True)
         return ledger.sort_index()
 
-    def generate_equity_curve(self, account_type):
+    def generate_equity_curve(self, group_by, value_column):
         # calculate debit and credit qty balanaces for given account type
 
-        ledger = self.simple.copy()
-        ledger['account_type_quantity'] = ledger['quantity'].where((ledger['account_type'] == account_type), 0)
-        ledger['debit_balance'] = ledger['account_type_quantity'].where(ledger['side'] == 'debit', 0)
-        ledger['credit_balance'] = ledger['account_type_quantity'].where(ledger['side'] == 'credit', 0)
+        # ledger = self.simple.copy()
+        ledger = self.add_balance(self.all_account_journals)
+        # ledger['account_type_quantity'] = ledger['quantity'].where((ledger['account_type'] == account_type), 0)
+        # ledger['debit_balance'] = ledger['account_type_quantity'].where(ledger['side'] == 'debit', 0)
+        # ledger['credit_balance'] = ledger['account_type_quantity'].where(ledger['side'] == 'credit', 0)
 
-        # calculate balance according to account type
-        if account_type == 'assets':
-            ledger['balance'] = ledger['debit_balance'] - ledger['credit_balance']
-        else:
-            ledger['balance'] =  ledger['credit_balance'] - ledger['debit_balance']
+        # # calculate balance according to account type
+        # if account_type == 'assets':
+        #     ledger['balance'] = ledger['debit_balance'] - ledger['credit_balance']
+        # else:
+        #     ledger['balance'] =  ledger['credit_balance'] - ledger['debit_balance']
         
         # create new df with timestamp (index), symbol, and balance
         # convert timestamps to utc then round down to nearest day
-        affected_symbol_balances = ledger[['symbol', 'balance']].copy()
-        affected_symbol_balances.index = affected_symbol_balances.index.tz_convert(tz='UTC').floor('1D')
+
+        # affected_symbol_balances = ledger[['symbol', 'balance_quantity']].copy()
 
         #! DO NOT MESS WITH THE ORDER BELOW
         # Affected Symbol Balances -> Equity Curve
@@ -170,18 +170,75 @@ class Ledger:
         # 5. Expand df to include row for everyday between first and last entry
         # 6. Set unavailable balances to 0
         # 6. Run cumsum on all symbol columns to get running balances
+        # ledger = (
+        #     ledger
+        #         .reset_index()
+        #         .set_index('timestamp')
+        #         .tz_convert(tz='UTC')
+        #         # .index.get_level_values(-1).floor('1D')
+        # )
+        ledger.reset_index(inplace=True)
+        ledger.set_index('timestamp', inplace=True)
+        ledger.index = ledger.index.tz_convert(tz='UTC').floor('1D')
+
         eq_curve = (
-            affected_symbol_balances
-                .groupby(['timestamp','symbol'])['balance']
+            ledger
+                .reset_index()
+                .groupby([*group_by, 'timestamp'])[value_column]
                 .apply(lambda x: x.sum())
                 .reset_index()
-                .pivot('timestamp', 'symbol', 'balance')
-                .rename_axis(columns=None)
+                .pivot('timestamp', group_by, value_column)
                 .asfreq(freq='1D', normalize=True)
                 .fillna(Decimal(0))
                 .cumsum()
         )
         return eq_curve
+
+    # def generate_equity_curve(self, account_type):
+    #     # calculate debit and credit qty balanaces for given account type
+
+    #     ledger = self.simple.copy()
+    #     ledger['account_type_quantity'] = ledger['quantity'].where((ledger['account_type'] == account_type), 0)
+    #     ledger['debit_balance'] = ledger['account_type_quantity'].where(ledger['side'] == 'debit', 0)
+    #     ledger['credit_balance'] = ledger['account_type_quantity'].where(ledger['side'] == 'credit', 0)
+
+    #     # calculate balance according to account type
+    #     if account_type == 'assets':
+    #         ledger['balance'] = ledger['debit_balance'] - ledger['credit_balance']
+    #     else:
+    #         ledger['balance'] =  ledger['credit_balance'] - ledger['debit_balance']
+        
+    #     # create new df with timestamp (index), symbol, and balance
+    #     # convert timestamps to utc then round down to nearest day
+    #     affected_symbol_balances = ledger[['symbol', 'balance']].copy()
+    #     affected_symbol_balances.index = affected_symbol_balances.index.tz_convert(tz='UTC').floor('1D')
+
+    #     #! DO NOT MESS WITH THE ORDER BELOW
+    #     # Affected Symbol Balances -> Equity Curve
+    #     # 1. group df by timestamp and symbol
+    #     # 2. sum balances to get symbols' affected balances each day
+    #     # 3. reset index to place timestamp back in columns
+    #     # 3. pivote with index=timestamp, columns=symbol, values=balance
+    #     #      this restructures df
+    #     #      from -> timestamp | symbol | balance |
+    #     #      to   -> timestamp | symbols[0] | ... | symbols[n]
+    #     #      where the values in symbols[n] represent that symbols total affected balance that day
+    #     # 4. remove colunm name "symbol", set to None
+    #     # 5. Expand df to include row for everyday between first and last entry
+    #     # 6. Set unavailable balances to 0
+    #     # 6. Run cumsum on all symbol columns to get running balances
+    #     eq_curve = (
+    #         affected_symbol_balances
+    #             .groupby(['timestamp','symbol'])['balance']
+    #             .apply(lambda x: x.sum())
+    #             .reset_index()
+    #             .pivot('timestamp', 'symbol', 'balance')
+    #             .rename_axis(columns=None)
+    #             .asfreq(freq='1D', normalize=True)
+    #             .fillna(Decimal(0))
+    #             .cumsum()
+    #     )
+    #     return eq_curve
 
     def add_balance(self, ledger):
         ledger['debit_quantity'] = ledger['quantity'].where(ledger['side'] == 'debit' , 0)
@@ -230,3 +287,13 @@ class Ledger:
         for l in ledgers:
             for e in l.entries:
                 self.add_entry(e)
+
+
+"""
+Ledger
+    get_account_journals(index) - account_type, account, sub_account
+    get_account_balance(index, timestamp=none) - account_type, account, sub_account if timestamp, filter all transactions after timestamp
+    get_account_balance_timeseries(index, normalized=True, column=balance_quantity) - account_type, account, sub_account. normalized determines whether to have regular intervals.
+
+"""
+                
