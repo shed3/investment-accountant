@@ -8,7 +8,7 @@ from .entry_config import CRYPTO, REALIZED_GAIN_LOSS, UNREALIZED_GAIN_LOSS, CRYP
 
 
 # close crypto (init), adj(change), and open new cash/crypto (total) -- last out of scope of base taxable
-close_crypto = {'side': "credit", **CRYPTO}
+close_crypto = {'side': "credit", **CRYPTO} # close out cost basis 
 close_fair_value = {'side': "credit", **CRYPTO_FAIR_VALUE_ADJ}
 close_credit_entries = [close_crypto, close_fair_value]
 # open depends on type and should be implemented there via the debit transaction.

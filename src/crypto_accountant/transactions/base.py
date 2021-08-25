@@ -9,9 +9,12 @@ incoming/outgoing and provide a simple interface for describing the credits and 
 This allows for tracking higher level positions outside the scope of a tx.
 """
 
+from google.api_core.datetime_helpers import DatetimeWithNanoseconds
+import pandas as pd
 from .components.asset import Asset
 from .components.entry import Entry
 from .entry_config import FEES_PAID, CASH, CRYPTO
+import pytz
 
 debit_fee_entry = {'side': "debit", 'mkt': 'fee', **FEES_PAID}
 credit_fee_entry = {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CASH}
@@ -37,10 +40,12 @@ class BaseTx:
         self.id = kwargs.get("id", None)
         self.type = kwargs.get("type", None)
         self.taxable = kwargs.get("taxable", False)
-        self.timestamp = kwargs.get("timestamp", None)
+        ts = kwargs.get("timestamp", None)
+        self.timestamp = pd.Timestamp(ts).replace(tzinfo=pytz.UTC)
         self.assets = {}
         self.add_asset("base", **kwargs)
-        self.add_asset("quote", **kwargs)
+        if 'quote_currency' in kwargs:
+            self.add_asset("quote", **kwargs)
         self.sub_total = self.assets['base'].usd_value
         self.total = self.sub_total
 
@@ -119,18 +124,18 @@ class BaseTx:
         fee_configs = kwargs.get("fee_config", self.fee_entry_template)
         return self.create_entries(entry_configs, fee_configs)
 
-    def adj_to_mkt(self, price, qty, date):
-        all_entries = []
-        # entries are the same otherwise, so for loop
-        adjustable_assets = list([key for key, val in self.assets.items() if not val.is_stable])
-        for adj_asset in adjustable_assets:
-            val_change = self.assets[adj_asset].usd_value - 
-            for entry in self.adj_entries:
-                adj_config = {
-                    **entry,
-                    'mkt': adj_asset,
-                    'quote': price,
-                    'value': change_val,
-                }
+    # def adj_to_mkt(self, price, qty, date):
+    #     all_entries = []
+    #     # entries are the same otherwise, so for loop
+    #     adjustable_assets = list([key for key, val in self.assets.items() if not val.is_stable])
+    #     for adj_asset in adjustable_assets:
+    #         val_change = self.assets[adj_asset].usd_value - 
+    #         for entry in self.adj_entries:
+    #             adj_config = {
+    #                 **entry,
+    #                 'mkt': adj_asset,
+    #                 'quote': price,
+    #                 'value': change_val,
+    #             }
 
-            all_entries.append(self.create_entry(**adj_config))
+    #         all_entries.append(self.create_entry(**adj_config))

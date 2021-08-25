@@ -6,14 +6,15 @@ quote coin, or fee coin in a tx.
 from ..utils import set_precision
 
 stable_coins = [
-    'usd',
-    'usdc',
-    'usdt',
-    'busd',
-    'husd',
-    'tusd',
-    'pax',
-    'dai',
+    'USDC',
+    'USDT',
+    'UST',
+    'BUSD',
+    'GUSD',
+    'HUSD',
+    'TUSD',
+    'PAX',
+    'DAI',
 ]
 
 
@@ -29,8 +30,8 @@ class Asset:
         self.quantity = qty
         self.usd_price = price
         self.usd_value = set_precision(self.quantity * self.usd_price, 2)
-        self.is_fiat = self.symbol.lower() == "usd"
-        self.is_stable = self.is_fiat or self.symbol.lower() in stable_coins
+        self.is_fiat = self.symbol == "USD"
+        self.is_stable = self.is_fiat or self.symbol in stable_coins
 
     @property
     def quantity(self):

@@ -32,6 +32,7 @@ class Position:
 
     @property
     def open_tax_lots(self):
+        # TODO make this a function that can accept a date range so that we can derive values from periods
         # sum opens available qtys
         lots = self._opens.copy()
         open_lots = []

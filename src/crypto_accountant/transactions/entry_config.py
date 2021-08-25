@@ -9,7 +9,7 @@ EQUITIES = {'account_type': 'equities'}
 CURRENT_ASSETS = {**ASSETS, 'account': 'current_assets'}
 CASH = {**CURRENT_ASSETS, 'sub_account': 'cash'}
 CRYPTO = {**CURRENT_ASSETS, 'sub_account': 'cryptocurrencies'}
-CRYPTO_FAIR_VALUE_ADJ = {**CURRENT_ASSETS, 'sub_account': 'cryptocurrencies_fair_value'}
+CRYPTO_FAIR_VALUE_ADJ = {**CURRENT_ASSETS, 'sub_account': 'adj_fair_value'}
 
 # Receivables (Assets)
 RECEIVABLES = {**ASSETS, 'account': 'receivables'}

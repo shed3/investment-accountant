@@ -52,28 +52,38 @@ def get_historical_df(symbols):
     df[not_found_assets] = np.nan   # create nan columns for unfound assets
     df['USD'] = Decimal(1)   # create nan columns for unfound assets
     df = df.fillna(Decimal(0))
-    df.index = df.index.tz_localize(tz='UTC').floor('1D')
     return df
+
+def get_change_df(historical_df):
+    return historical_df.diff()
 
 
 start = datetime.now()
-
+base_symbols = list([x['baseCurrency'] for x in txs])
+quote_symbols = list([x['quoteCurrency'] for x in txs if "quoteCurrency" in x.keys()])
+symbols = set(base_symbols+quote_symbols)
+print("Loaded historical data")
 # initialize bookkeeper
 bk = BookKeeper()
+historical = get_historical_df(symbols)
+bk.add_historical_data(historical)
 bk.add_txs(txs, auto_detect=True)
-eq_curve = bk.ledger.generate_equity_curve(['account_type', 'symbol'], 'balance_quantity')['assets']
-print('###########EQUITY CURVE##############')
-print(eq_curve)
+
+# eq_curve = bk.ledger.generate_equity_curve(['account_type', 'symbol'], 'balance_quantity')['assets']
+# print('###########EQUITY CURVE##############')
+# print(eq_curve)
 
 journals = bk.ledger.all_account_journals
+btc_timeseries = bk.ledger.account_balances_timeseries['assets', 'current_assets', 'adj_fair_value', 'BTC']
+btc_balances = bk.ledger.account_balances['BTC']
 print('###########ACCOUNT JOURNALS##############')
-print(journals)
-# print(bk.ledger.account_balances_timeseries)
-# print(bk.ledger.account_balances_timeseries['equities', 'revenues', 'interest_earned_account', 'BTC'])
+# print(journals)
+print(len(journals))
+print(btc_balances)
 
 
 # multiply qty df with price df and then sum them all into total
-# historical = get_historical_df(bk.ledger.symbols)
+
 # val_curve = eq_curve.mul(historical)
 # val_curve['total'] = val_curve[bk.ledger.symbols].sum(axis=1)
 # print(val_curve['total'])

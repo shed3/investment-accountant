@@ -1,7 +1,7 @@
 from .taxable import TaxableTx
 from .entry_config import CRYPTO
 
-debit_base_entry = {'side': "debit", **CRYPTO}
+debit_base_entry = {'side': "debit", 'mkt': 'base', **CRYPTO}
 credit_quote_entry = {'side': "credit", 'mkt': 'quote', **CRYPTO}
 entry_template = {
     'debit': debit_base_entry,

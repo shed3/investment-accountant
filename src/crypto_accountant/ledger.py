@@ -11,7 +11,6 @@ The Ledger's main role is to act as the general ledger for the book keeper.
     ledger.add_entry(entry)
     summary = ledger.summarize()
 """
-from datetime import datetime
 from decimal import Decimal
 from re import T
 import pandas as pd
@@ -70,10 +69,10 @@ class Ledger:
         """
         ledger = self.add_balance(self.all_account_journals)
         summary_symbol = (ledger
-            .groupby(['account_type', 'account', 'sub_account', 'symbol'])['balance_quantity']
+            .groupby(['account_type', 'account', 'sub_account', 'symbol'])['balance']
             .apply(lambda x: x.sum())
             .reset_index()
-            .pivot(['account_type', 'account', 'sub_account'], 'symbol', 'balance_quantity')
+            .pivot(['account_type', 'account', 'sub_account'], 'symbol', 'balance')
         )
         return summary_symbol
 
@@ -87,10 +86,10 @@ class Ledger:
         """
         ledger = self.add_balance(self.all_account_journals)
         timeseries_summary = (ledger
-            .groupby(['account_type', 'account', 'sub_account', 'symbol', 'timestamp'])['balance_quantity']
+            .groupby(['account_type', 'account', 'sub_account', 'symbol', 'timestamp'])['balance']
             .apply(lambda x: x.sum())
             .reset_index()
-            .pivot('timestamp', ['account_type', 'account', 'sub_account', 'symbol'], 'balance_quantity')                
+            .pivot('timestamp', ['account_type', 'account', 'sub_account', 'symbol'], 'balance')                
             .fillna(Decimal(0))
             .cumsum()
         )
