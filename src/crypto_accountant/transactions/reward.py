@@ -16,8 +16,6 @@ class Reward(BaseTx):
     
     def get_affected_balances(self):
         base = self.assets['base']
-        if base.is_fiat:
-            self.entry_template['debit'] = debit_cash_base_entry
         affected_balances = {}
         affected_balances[base.symbol] = base.quantity
         if 'fee' in self.assets:

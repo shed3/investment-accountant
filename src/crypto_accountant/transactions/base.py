@@ -9,12 +9,20 @@ incoming/outgoing and provide a simple interface for describing the credits and 
 This allows for tracking higher level positions outside the scope of a tx.
 """
 
-from google.api_core.datetime_helpers import DatetimeWithNanoseconds
+import logging
+
 import pandas as pd
+import pytz
+from google.api_core.datetime_helpers import DatetimeWithNanoseconds
+
 from .components.asset import Asset
 from .components.entry import Entry
-from .entry_config import FEES_PAID, CASH, CRYPTO
-import pytz
+from .. import utils 
+from .entry_config import CASH, CRYPTO, FEES_PAID
+
+utc = pytz.UTC
+log = logging.getLogger(__name__)
+
 
 debit_fee_entry = {'side': "debit", 'mkt': 'fee', **FEES_PAID}
 credit_fee_entry = {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CASH}
@@ -22,7 +30,8 @@ fee_config = {
     'debit': debit_fee_entry.copy(),
     'credit': credit_fee_entry.copy()
 }
-stable_credit_fee_entry = {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CRYPTO}
+stable_credit_fee_entry = {'side': "credit",
+                           'type': 'fee', 'mkt': 'fee', **CRYPTO}
 
 # ALL VALUES MUST BE DECIMALS
 
@@ -58,21 +67,26 @@ class BaseTx:
                 kwargs['fee_usd_price'] = kwargs['quote_usd_price']
             self.add_asset("fee", **kwargs)
             if self.assets['fee'].is_stable and not self.assets['fee'].is_fiat:
-                self.fee_entry_template['credit'] = stable_credit_fee_entry.copy()
+                self.fee_entry_template['credit'] = stable_credit_fee_entry.copy(
+                )
             self.total += self.assets['fee'].usd_value
+        log.debug('Base Transaction created with args:\n{}'.format(utils.dict_to_string(self.to_dict())))
 
     def get_affected_balances(self):
-        print('Implementation Error: must define get_affected_balances for {} tx'.format(self.type))
+        print('Implementation Error: must define get_affected_balances for {} tx'.format(
+            self.type))
         return {}
 
     def to_dict(self):
         dict_val = self.__dict__.copy()
         dict_val['base'] = self.assets['base'].to_dict()
-        dict_val['quote'] = self.assets['quote'].to_dict()
+        if 'quote' in self.assets:
+            dict_val['quote'] = self.assets['quote'].to_dict() 
         if 'fee' in self.assets:
             dict_val['fee'] = self.assets['fee'].to_dict()
         del dict_val['assets']
         return dict_val
+    
 
     def add_asset(self, position, **kwargs):
         # position refers to asset's position within tx -> base, quote, fee
@@ -107,14 +121,17 @@ class BaseTx:
         return entry
 
     def create_entries(self, entry_configs, fee_configs):
-        entries = list([self.create_entry(**config) for config in list(entry_configs.values())])
+        entries = list([self.create_entry(**config)
+                       for config in list(entry_configs.values())])
         if 'fee' in self.assets and self.assets['fee'].quantity > 0:
             if self.assets['fee'].is_fiat:
                 # add fee entries to list of tx entries
-                fee_entries = list([self.create_entry(**config) for config in list(fee_configs.values())])
+                fee_entries = list([self.create_entry(**config)
+                                   for config in list(fee_configs.values())])
                 entries += fee_entries
             else:
-                entries.append(self.create_entry(**self.fee_entry_template['debit']))
+                entries.append(self.create_entry(
+                    **self.fee_entry_template['debit']))
 
         self.entries = entries
         return entries
@@ -129,7 +146,7 @@ class BaseTx:
     #     # entries are the same otherwise, so for loop
     #     adjustable_assets = list([key for key, val in self.assets.items() if not val.is_stable])
     #     for adj_asset in adjustable_assets:
-    #         val_change = self.assets[adj_asset].usd_value - 
+    #         val_change = self.assets[adj_asset].usd_value -
     #         for entry in self.adj_entries:
     #             adj_config = {
     #                 **entry,

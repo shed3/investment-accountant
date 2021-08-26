@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from .utils import check_type
+from .utils import set_precision
 import pytz
 utc=pytz.UTC
 class Position:
@@ -62,7 +62,7 @@ class Position:
         self.mkt_price = price
         self.mkt_timestamp = timestamp
         for id in self._opens.keys():
-            self._opens[id]['unrealized_gain'] = self._opens[id]['available_qty'] * check_type(price)
+            self._opens[id]['unrealized_gain'] = self._opens[id]['available_qty'] * price
             if (timestamp  - self._opens[id]['timestamp']).days > 365:
                 self._opens[id]['term'] = 'long'
 
@@ -91,14 +91,12 @@ class Position:
     def add(self, id, price, timestamp, qty):
         # add entry to opens and update open_stats
         timestamp = timestamp.replace(tzinfo=utc)
-        price = check_type(price)
-        qty = check_type(qty)
         self._opens[id] = {
             'timestamp': timestamp,
-            'price': check_type(price),
-            'qty': check_type(qty),
-            'available_qty': check_type(qty),
-            'unrealized_gain': check_type(0),
+            'price': price,
+            'qty': qty,
+            'available_qty': qty,
+            'unrealized_gain': set_precision(0, 18),
             'term': 'short'
         }
         self._update_stats('open', price, timestamp)
@@ -106,13 +104,12 @@ class Position:
     def close(self, id, price, timestamp, config):
         # add entry to closes and update close_stats
         timestamp = timestamp.replace(tzinfo=utc)
-        price = check_type(price)
-        qty =  sum(list([check_type(x) for x in list(config.values())]))
+        qty =  sum(list([x for x in list(config.values())]))
         self._closes[id] = {
             'timestamp': timestamp,
             'price': price,
             'qty': qty,
-            'realized_gain': check_type(0)
+            'realized_gain': set_precision(0, 18)
         }
 
         # update available quantities
@@ -120,11 +117,11 @@ class Position:
         for config_id, config_qty in config.items():
             entry = self._opens.get(config_id, None)
             if entry:
-                close_qty = check_type(config_qty)
+                close_qty = config_qty
                 if entry['available_qty'] >= config_qty:
                     self._opens[config_id]['available_qty'] -= close_qty
                 else:
-                    self._opens[config_id]['available_qty'] = check_type(0)
+                    self._opens[config_id]['available_qty'] = set_precision(0, 18)
                     close_qty = self._opens[config_id]['available_qty']
 
                 self._closes[id]['realized_gain'] += close_qty * price

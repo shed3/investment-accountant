@@ -9,6 +9,7 @@ from tests.fixtures import Fixes
 from src.crypto_accountant.bookkeeper import BookKeeper
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+log = logging.getLogger(__name__)
 
 
 pd.set_option("display.expand_frame_repr", False)
@@ -62,7 +63,7 @@ start = datetime.now()
 base_symbols = list([x['baseCurrency'] for x in txs])
 quote_symbols = list([x['quoteCurrency'] for x in txs if "quoteCurrency" in x.keys()])
 symbols = set(base_symbols+quote_symbols)
-print("Loaded historical data")
+log.info("Loaded historical data")
 # initialize bookkeeper
 bk = BookKeeper()
 historical = get_historical_df(symbols)
