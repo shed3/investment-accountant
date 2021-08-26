@@ -3,7 +3,7 @@ An Asset represents the info about a coin that makes up part
 of a transaction. Currently it is used as a base coin, 
 quote coin, or fee coin in a tx.
 """
-from ..utils import set_precision
+from ...utils import set_precision
 
 stable_coins = [
     'USDC',

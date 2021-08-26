@@ -10,6 +10,7 @@ from tests.fixtures import Fixes
 from src.crypto_accountant.bookkeeper import BookKeeper
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+log = logging.getLogger(__name__)
 
 
 pd.set_option("display.expand_frame_repr", False)
@@ -61,6 +62,7 @@ def get_change_df(historical_df):
 
 
 start = datetime.now()
+
 # --- get symbols from firebase tx ---
 # base_symbols = list([x['baseCurrency'] for x in txs])
 # quote_symbols = list([x['quoteCurrency'] for x in txs if "quoteCurrency" in x.keys()])
@@ -68,7 +70,7 @@ start = datetime.now()
 
 symbols = ["BTC", "ETH"]
 historical = get_historical_df(symbols)
-print("Loaded historical data")
+log.info("Loaded historical data")
 
 # initialize bookkeeper
 bk = BookKeeper()

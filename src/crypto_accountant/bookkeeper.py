@@ -1,14 +1,28 @@
+import logging
+import re
 import pytz
 import pandas as pd
-from datetime import datetime, tzinfo
+from datetime import datetime
 from decimal import Decimal
 
 from .transactions.base import BaseTx
+from .transactions.interest_in_account import InterestInAccount
+from .transactions.interest_in_stake import InterestInStake
+from .transactions.reward import Reward
+from .transactions.buy import Buy
+from .transactions.deposit import Deposit
+from .transactions.receive import Receive
+from .transactions.sell import Sell
+from .transactions.send import Send
+from .transactions.swap import Swap
+from .transactions.withdrawal import Withdrawal
 from .transactions.components.entry import Entry
 from .ledger import Ledger
 from .position import Position
 from .transactions.entry_config import CRYPTO_FAIR_VALUE_ADJ, UNREALIZED_GAIN_LOSS
-from .utils import check_type, create_tx
+from .utils import set_precision
+
+log = logging.getLogger(__name__)
 
 utc = pytz.UTC
 
@@ -19,21 +33,63 @@ adj_to_fair_value_entries = [adj_fair_value, adj_unrealized_gains]
 
 class BookKeeper:
     def __init__(self, freq="D", interval="1") -> None:
-        self.positions = {'usd': Position('usd')}
+        self.positions = {'USD': Position('USD')}
         self.ledger = Ledger()
-        self.tax_rates = {'long': check_type(.25), 'short': check_type(.4)}
+        self.tax_rates = {'long': set_precision(.25, 2), 'short': set_precision(.4, 2)}
         self.freq = freq
         self.interval = interval
         self.periods = []
         self.current_period_index = 0
         self.historical_data = None
-        self.historical_data_change = None
-
+    
     def detect_type(self, tx):
         # if auto detect is allowed and the tx arg isnt already some form of BaseTx
         # create an instance of the correct tx class based on tx data
         if not isinstance(tx, BaseTx):
-            tx = create_tx(**tx)
+            type = tx.get('type', 'other')
+            args = {}
+            for key, value in tx.items():
+                key = key.replace('-', '_')
+                key = key.replace(' ', '_')
+                key_pieces = re.findall('[A-Za-z][^A-Z]*', key)
+                key = '_'.join(key_pieces)
+                key = key.replace('__', '_')
+                key = key.lower()
+                if key in ['tx_type', 'txn_type', 'type', 'trans_type', 'transaction_type']:
+                    tx_type = value
+                    args['type'] = tx_type
+                elif key in ['timestamp', 'time', 'date', 'time_stamp']:
+                    args['timestamp'] = value
+                else:
+                    args[key] = value
+
+            if 'type' in args.keys():
+                type = args['type']
+                if type == 'deposit':
+                    return Deposit(**args)
+                elif type == 'withdrawal':
+                    return Withdrawal(**args)
+                elif type == 'buy':
+                    return Buy(**args)
+                elif type == 'sell':
+                    return Sell(**args)
+                elif type == 'swap':
+                    return Swap(**args)
+                elif type == 'send':
+                    return Send(**args)
+                elif type == 'receive':
+                    return Receive(**args)
+                elif type == 'reward':
+                    return Reward(**args)
+                elif type == 'interest-in-stake':
+                    return InterestInStake(**args)
+                elif type == 'interest-in-account':
+                    return InterestInAccount(**args)
+                # elif type == 'interest_in':
+                    # return InterestInAccount(**args)
+                else:
+                    raise Exception('TYPE {} NOT CREATED'.format(type))
+
         return tx
 
     def add_historical_data(self, data):
@@ -45,7 +101,6 @@ class BookKeeper:
         """
         data.index = data.index.tz_localize(tz='UTC').ceil(self.interval + self.freq)
         self.historical_data = data
-        self.historical_data_change = data.diff()
 
     def _add_prechecks(self, tx):
         # create position from base_currency if needed
@@ -53,14 +108,23 @@ class BookKeeper:
             self.positions[tx.assets['base'].symbol] = Position(
                 tx.assets['base'].symbol)
 
-         # create position from quote_currency if needed
+        # create position from quote_currency if needed
         if 'quote' in tx.assets and tx.assets['quote'].symbol not in self.positions:
-            self.positions[tx.assets['quote'].symbol] = Position(
-                tx.assets['quote'].symbol)
+                self.positions[tx.assets['quote'].symbol] = Position(
+                    tx.assets['quote'].symbol)
+        
+        # create position from fee_currency if needed
+        if 'fee' in tx.assets and tx.assets['fee'].symbol not in self.positions:
+                self.positions[tx.assets['fee'].symbol] = Position(
+                    tx.assets['fee'].symbol)
+        
+        # adjust positions to mkt price from tx assets
+        for asset in tx.assets.values():
+            self.positions[asset.symbol].adjust_to_mtk(asset.usd_price, tx.timestamp)
 
         if len(self.periods) < 1:
-            start=tx.timestamp
-            end=pd.Timestamp.now(tz=utc)
+            start = tx.timestamp
+            end = pd.Timestamp.now(tz=utc)
             freq = self.interval + self.freq
             tz = pytz.UTC
             period_df = pd.date_range(start=start, end=end, freq=freq, tz=tz, normalize=True)
@@ -76,46 +140,47 @@ class BookKeeper:
         Returns:
             [type]: [description]
         """
-        return self.historical_data.at[timestamp.ceil(self.interval + self.freq), symbol]
+        return set_precision(self.historical_data.at[timestamp.ceil(self.interval + self.freq), symbol], 18)
 
-    def get_price_change(self, timestamp, symbol):
-        """Get change in price of an asset since end of previous period at specified timestamp
+    def get_period_entries(self):
+        """Returns entries that close out current period
 
         Args:
+            price ([type]): [description]
             timestamp ([type]): [description]
-            symbol ([type]): [description]
 
         Returns:
             [type]: [description]
         """
-        return self.historical_data_change.at[timestamp.round(self.interval + self.freq), symbol]
-    
-
-    def create_closing_entries(self):
         all_entries = []
         # get all open tax lots for each symbol
-        for symbol, position in self.positions.items():
-            symbol = symbol.upper()
+        for symbol in self.positions.keys():
             # get price change and multiple by lot quantity to get value.
             timestamp = self.periods[self.current_period_index]
             curr_price = self.get_price(timestamp, symbol)
-            change_price = self.get_price_change(timestamp, symbol)
-            for tax_lot in position.open_tax_lots:
-                change_val = tax_lot['qty'] * change_price
-                # print(symbol, change_val, tax_lot['qty'], curr_price, change_price)
-                for entry in adj_to_fair_value_entries:
-                    adj_config = {
-                        **entry,
-                        # Quote price is original position entry. Value is change in market value of quantity.
-                        'id': tax_lot['id'],
-                        'timestamp': timestamp,
-                        'symbol': symbol,
-                        'quote': tax_lot['price'],
-                        'value': change_val,
-                        'close_quote': curr_price,
-                    }
-                    all_entries.append(Entry(**adj_config))
+            all_entries += self.create_adjusting_entries(symbol, curr_price, timestamp)
         return all_entries
+
+    def create_adjusting_entries(self, symbol, curr_price, timestamp):
+        adj_entries = []
+        position = self.positions[symbol]
+        change_price = curr_price - position.mkt_price
+        self.positions[symbol].adjust_to_mtk(curr_price, timestamp)
+        for tax_lot in position.open_tax_lots:
+            change_val = tax_lot['qty'] * change_price
+            for entry in adj_to_fair_value_entries:
+                adj_config = {
+                    **entry,
+                    # Quote price is original position entry. Value is change in market value of quantity.
+                    'id': tax_lot['id'],
+                    'timestamp': timestamp,
+                    'symbol': symbol,
+                    'quote': tax_lot['price'],
+                    'value': change_val,
+                    'close_quote': curr_price,
+                }
+                adj_entries.append(Entry(**adj_config))
+        return adj_entries
 
     def close_periods(self, timestamp):
         # determine number of periods to close between tx timestamp and last entry
@@ -135,7 +200,7 @@ class BookKeeper:
         closing_entries = []
         # close all past periods
         for x in range(num_periods + 1):
-            period_entries = self.create_closing_entries()
+            period_entries = self.get_period_entries()
             closing_entries += period_entries
             self.current_period_index += 1
         if len(closing_entries) > 0:
@@ -173,10 +238,11 @@ class BookKeeper:
                 self.positions[symbol].add(
                     tx.id, asset.usd_price, tx.timestamp, asset.quantity)
 
+        # Entry validation checks
         entry_dicts = list([x.to_dict() for x in entries])
         entry_check = self.validate_entry_set(entry_dicts)
         if not entry_check['valid']:
-            print(entry_check)
+            log.debug(entry_check)
 
         # add new tx's entries to ledger
         for entry in entries:
