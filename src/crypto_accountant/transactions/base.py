@@ -10,7 +10,7 @@ This allows for tracking higher level positions outside the scope of a tx.
 """
 
 import logging
-
+from pprint import pformat
 import pandas as pd
 import pytz
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
@@ -70,7 +70,9 @@ class BaseTx:
                 self.fee_entry_template['credit'] = stable_credit_fee_entry.copy(
                 )
             self.total += self.assets['fee'].usd_value
-        log.debug('Base Transaction created with args:\n{}'.format(utils.dict_to_string(self.to_dict())))
+
+        log.debug('Tx initialized of type {}:\n{}'.format(self.type, pformat(self.to_dict())))
+        
 
     def get_affected_balances(self):
         print('Implementation Error: must define get_affected_balances for {} tx'.format(
@@ -86,6 +88,8 @@ class BaseTx:
             dict_val['fee'] = self.assets['fee'].to_dict()
         del dict_val['assets']
         return dict_val
+
+
     
 
     def add_asset(self, position, **kwargs):

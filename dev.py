@@ -8,7 +8,7 @@ from decimal import Decimal
 from tests.fixtures import Fixes
 from src.crypto_accountant.bookkeeper import BookKeeper
 
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "DEBUG"))
 log = logging.getLogger(__name__)
 
 
