@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import logging
+from tests.factories import TxnFactory
 import numpy as np
 import pandas as pd
 import pystore
@@ -55,18 +56,26 @@ def get_historical_df(symbols):
     df = df.fillna(Decimal(0))
     return df
 
+
 def get_change_df(historical_df):
     return historical_df.diff()
 
 
 start = datetime.now()
+
+# --- get symbols from firebase tx ---
 base_symbols = list([x['baseCurrency'] for x in txs])
 quote_symbols = list([x['quoteCurrency'] for x in txs if "quoteCurrency" in x.keys()])
 symbols = set(base_symbols+quote_symbols)
+
+# --- get symbols from hardcodes tx ---
+# symbols = ["BTC", "ETH"]
+
+historical = get_historical_df(symbols)
 log.info("Loaded historical data")
+
 # initialize bookkeeper
 bk = BookKeeper()
-historical = get_historical_df(symbols)
 bk.add_historical_data(historical)
 bk.add_txs(txs, auto_detect=True)
 
@@ -89,7 +98,6 @@ print(btc_balances)
 # val_curve['total'] = val_curve[bk.ledger.symbols].sum(axis=1)
 # print(val_curve['total'])
 # print(datetime.now() - start)
-
 
 
 # TODO
