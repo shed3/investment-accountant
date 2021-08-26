@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import logging
+from tests.factories import TxnFactory
 import numpy as np
 import pandas as pd
 import pystore
@@ -20,12 +21,12 @@ pd.set_option("display.min_rows", 100)
 pd.set_option("display.max_columns", 8)
 
 # Hardcoded transactions
-# txs = TxnFactory.hardcoded_txs()
+txs = TxnFactory.hardcoded_txs()
 
 # Firebase Transactions
-firestore_cred_file = Fixes.firestore_cred_file(Fixes.storage_dir())
-firestore_ref = Fixes.firestore_ref(firestore_cred_file)
-txs = Fixes.firestore_user_transactions(firestore_ref)
+# firestore_cred_file = Fixes.firestore_cred_file(Fixes.storage_dir())
+# firestore_ref = Fixes.firestore_ref(firestore_cred_file)
+# txs = Fixes.firestore_user_transactions(firestore_ref)
 
 # Pystore historical data
 pystore.set_path("/Volumes/CAPA/.storage")
@@ -54,20 +55,25 @@ def get_historical_df(symbols):
     df = df.fillna(Decimal(0))
     return df
 
+
 def get_change_df(historical_df):
     return historical_df.diff()
 
 
 start = datetime.now()
-base_symbols = list([x['baseCurrency'] for x in txs])
-quote_symbols = list([x['quoteCurrency'] for x in txs if "quoteCurrency" in x.keys()])
-symbols = set(base_symbols+quote_symbols)
+# --- get symbols from firebase tx ---
+# base_symbols = list([x['baseCurrency'] for x in txs])
+# quote_symbols = list([x['quoteCurrency'] for x in txs if "quoteCurrency" in x.keys()])
+# symbols = set(base_symbols+quote_symbols)
+
+symbols = ["BTC", "ETH"]
+historical = get_historical_df(symbols)
 print("Loaded historical data")
+
 # initialize bookkeeper
 bk = BookKeeper()
-historical = get_historical_df(symbols)
 bk.add_historical_data(historical)
-bk.add_txs(txs, auto_detect=True)
+bk.add_txs(txs, auto_detect=False)
 
 # eq_curve = bk.ledger.generate_equity_curve(['account_type', 'symbol'], 'balance_quantity')['assets']
 # print('###########EQUITY CURVE##############')
@@ -88,7 +94,6 @@ print(btc_balances)
 # val_curve['total'] = val_curve[bk.ledger.symbols].sum(axis=1)
 # print(val_curve['total'])
 # print(datetime.now() - start)
-
 
 
 # TODO
