@@ -31,6 +31,7 @@ adj_fair_value = {'side': "debit", 'type': 'adjust', 'quantity': 0, **CRYPTO_FAI
 adj_unrealized_gains = {'side': "credit", 'type': 'adjust', 'quantity': 0, **UNREALIZED_GAIN_LOSS}
 adj_to_fair_value_entries = [adj_fair_value, adj_unrealized_gains]
 
+
 class BookKeeper:
     def __init__(self, freq="D", interval="1") -> None:
         self.positions = {'USD': Position('USD')}
@@ -41,7 +42,7 @@ class BookKeeper:
         self.periods = []
         self.current_period_index = 0
         self.historical_data = None
-    
+
     def detect_type(self, tx):
         # if auto detect is allowed and the tx arg isnt already some form of BaseTx
         # create an instance of the correct tx class based on tx data
@@ -110,14 +111,14 @@ class BookKeeper:
 
         # create position from quote_currency if needed
         if 'quote' in tx.assets and tx.assets['quote'].symbol not in self.positions:
-                self.positions[tx.assets['quote'].symbol] = Position(
-                    tx.assets['quote'].symbol)
-        
+            self.positions[tx.assets['quote'].symbol] = Position(
+                tx.assets['quote'].symbol)
+
         # create position from fee_currency if needed
         if 'fee' in tx.assets and tx.assets['fee'].symbol not in self.positions:
-                self.positions[tx.assets['fee'].symbol] = Position(
-                    tx.assets['fee'].symbol)
-        
+            self.positions[tx.assets['fee'].symbol] = Position(
+                tx.assets['fee'].symbol)
+
         # adjust positions to mkt price from tx assets
         for asset in tx.assets.values():
             self.positions[asset.symbol].adjust_to_mtk(asset.usd_price, tx.timestamp)
@@ -187,7 +188,7 @@ class BookKeeper:
         # create closing entries for each period
         # run trial balance on each period being closed
         # add number of closing periods to current period index
-        
+
         # move below to place calling this function
         period_timedelta = timestamp - self.periods[self.current_period_index]
         if self.freq == "H":
@@ -196,7 +197,7 @@ class BookKeeper:
             num_periods = period_timedelta.days
         elif self.freq == "W":
             num_periods = period_timedelta.weeks
-        
+
         closing_entries = []
         # close all past periods
         for x in range(num_periods + 1):
@@ -207,9 +208,11 @@ class BookKeeper:
             for entry in closing_entries:
                 self.ledger.add_entry(entry.to_dict())
 
-
     def add_txs(self, txs, auto_detect=True):
-        transactions = sorted(txs, key=lambda x: dict(x).get('timestamp'))
+        if auto_detect:
+            transactions = sorted(txs, key=lambda x: dict(x).get('timestamp'))
+        else:
+            transactions = sorted(txs, key=lambda x: x.timestamp)
         for tx in transactions:
             self.add_tx(tx, auto_detect)
 
