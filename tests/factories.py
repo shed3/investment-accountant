@@ -215,45 +215,67 @@ class TxnFactory:
             'timestamp': date,
             'id': uuid.uuid4(),
             'base_currency': 'USD',
-            'base_quantity': check_type(10000.00),
-            'base_usd_price': check_type(1.00)
+            'base_quantity': 100000,
+            'base_usd_price': 1.00
         })
         txs.append(deposit_initial)
-        date = date.__add__(timedelta(days=2))
-        # initial 5 BTC buy at 1000 per btc for 5000 USD. Cash 5000, Crypto 5000 qty 5. No fee.
+        date = datetime(year=2018, month=1, day=4)
+        # initial 5 BTC buy at 1000 per btc for about 75000 USD. Cash 5000, Crypto 5000 qty 5. No fee.
         buy_btc_simple = Buy(**{
             'type': 'buy',
             'timestamp': date,
             'id': uuid.uuid4(),
             'base_currency': 'BTC',
-            'base_quantity': check_type(5.000000000000),
-            'base_usd_price': check_type(1000.00),
+            'base_quantity': 1,
+            'base_usd_price': 15244.58,
             # 'fee_currency': 'USD',
             # 'fee_quantity': check_type(2.99),
             # 'fee_usd_price': check_type(1.00),
             'quote_currency': 'USD',
-            'quote_quantity': check_type(5.000000000000) * check_type(1000.00),
-            'quote_usd_price': check_type(1.00),
+            'quote_quantity': 1 * 15244.58,
+            'quote_usd_price': 1.00,
         })
         txs.append(buy_btc_simple)
 
-        date = date.__add__(timedelta(days=180))
-        # short term gain. sell 1 btc at 2000 per coin for 1000 gain. No fee
+        
+
+        date = datetime(year=2018, month=1, day=8) 
+               # short term gain. sell 1 btc at 2000 per coin for 1000 gain. No fee
         short_term_btc_sell_gain = Sell(**{
             'type': 'sell',
             'timestamp': date,
             'id': uuid.uuid4(),
             'base_currency': 'BTC',
-            'base_quantity': check_type(1.000000000000),
-            'base_usd_price': check_type(2000.00),
+            'base_quantity': .5,
+            'base_usd_price': 15034,
             # 'fee_currency': 'USD',
             # 'fee_quantity': check_type(2.99),
             # 'fee_usd_price': check_type(1.00),
             'quote_currency': 'USD',
-            'quote_quantity': check_type(1.000000000000) * check_type(2000.00),
-            'quote_usd_price': check_type(1.00),
+            'quote_quantity': .5 * 15034,
+            'quote_usd_price': 1.00,
         })
         txs.append(short_term_btc_sell_gain)
+
+        date = datetime(year=2018, month=1, day=12)
+        # initial 5 BTC buy at 1000 per btc for about 75000 USD. Cash 5000, Crypto 5000 qty 5. No fee.
+        swap_btc_eth_simple = Swap(**{
+            'type': 'swap',
+            'timestamp': date,
+            'id': uuid.uuid4(),
+            'base_currency': 'ETH',
+            'base_quantity': 1,
+            'base_usd_price': 1263.86,
+            'fee_currency': 'BTC',
+            'fee_quantity': .0001,
+            'fee_usd_price': 13884.32,
+            'quote_currency': 'BTC',
+            'quote_quantity': .0910149,
+            'quote_usd_price': 13884.32,
+        })
+        txs.append(swap_btc_eth_simple)
+
+
 
         date = date.__add__(timedelta(days=365))
         # long term gain. sell 1 btc at 4000 per coin for 3000 gain.
@@ -271,7 +293,7 @@ class TxnFactory:
             'quote_quantity': check_type(1.000000000000) * check_type(4000.00),
             'quote_usd_price': check_type(1.00),
         })
-        txs.append(long_term_btc_sell_gain)
+        # txs.append(long_term_btc_sell_gain)
 
         date = date.__add__(timedelta(days=1))
         # long term loss. swap 1 btc at 500 per coin for 500 loss. get 10 eth for 50 per eth. no fee
@@ -289,7 +311,7 @@ class TxnFactory:
             'quote_quantity': check_type(1.000000000000),
             'quote_usd_price': check_type(500.00),
         })
-        txs.append(long_term_btc_swap_loss)
+        # txs.append(long_term_btc_swap_loss)
 
         return txs
 

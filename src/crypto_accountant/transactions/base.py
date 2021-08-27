@@ -71,7 +71,7 @@ class BaseTx:
                 )
             self.total += self.assets['fee'].usd_value
 
-        log.debug('Tx initialized of type {}:\n{}'.format(self.type, pformat(self.to_dict())))
+        log.debug('Tx initialized of type {}:\n{}\n\n'.format(self.type, pformat(self.to_dict())))
         
 
     def get_affected_balances(self):

@@ -101,7 +101,20 @@ class Position:
         }
         self._update_stats('open', price, timestamp)
 
-    def close(self, id, price, timestamp, config):
+    def close(self, id, price, timestamp, config=None, fill_quantity=None):
+
+        # attempt to create default tax lot fill order based on FIFO
+        if not config:
+            if fill_quantity != None:
+                config = {}
+                filled = 0
+                for tax_lot in self.open_tax_lots:
+                    if filled < fill_quantity:
+                        config[tax_lot['id']] = tax_lot['qty']
+                        filled += tax_lot['qty']
+            else:
+                raise Exception("Must provide fill_quantity if config is not provided.")
+
         # add entry to closes and update close_stats
         timestamp = timestamp.replace(tzinfo=utc)
         qty =  sum(list([x for x in list(config.values())]))

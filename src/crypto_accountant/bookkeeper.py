@@ -169,18 +169,19 @@ class BookKeeper:
         self.positions[symbol].adjust_to_mtk(curr_price, timestamp)
         for tax_lot in position.open_tax_lots:
             change_val = tax_lot['qty'] * change_price
-            for entry in adj_to_fair_value_entries:
-                adj_config = {
-                    **entry,
-                    # Quote price is original position entry. Value is change in market value of quantity.
-                    'id': tax_lot['id'],
-                    'timestamp': timestamp,
-                    'symbol': symbol,
-                    'quote': tax_lot['price'],
-                    'value': change_val,
-                    'close_quote': curr_price,
-                }
-                adj_entries.append(Entry(**adj_config))
+            if change_val != 0:
+                for entry in adj_to_fair_value_entries:
+                    adj_config = {
+                        **entry,
+                        # Quote price is original position entry. Value is change in market value of quantity.
+                        'id': tax_lot['id'],
+                        'timestamp': timestamp,
+                        'symbol': symbol,
+                        'quote': tax_lot['price'],
+                        'value': change_val,
+                        'close_quote': curr_price,
+                    }
+                    adj_entries.append(Entry(**adj_config))
         return adj_entries
 
     def close_periods(self, timestamp):
@@ -231,15 +232,20 @@ class BookKeeper:
             entries = self.process_taxable(tx)
         else:
             entries = tx.get_entries()
+            # need to close non taxable positions here?
 
         affected_positions = tx.get_affected_balances()
         for symbol, qty in affected_positions.items():
+            position, asset = list([[key, val] for key, val in tx.assets.items()
+                             if val.symbol == symbol])[0]
             if qty > 0:
                 # add tx to debit assets to positions
-                asset = list([item for item in tx.assets.values()
-                             if item.symbol == symbol])[0]
                 self.positions[symbol].add(
                     tx.id, asset.usd_price, tx.timestamp, asset.quantity)
+            elif getattr(tx, 'taxable_assets', False):
+                if position not in tx.taxable_assets.keys():
+                    self.positions[symbol].close(tx.id, asset.usd_price, tx.timestamp, fill_quantity=-qty)
+
 
         # Entry validation checks
         entry_dicts = list([x.to_dict() for x in entries])

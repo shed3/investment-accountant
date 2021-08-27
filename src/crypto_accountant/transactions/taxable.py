@@ -81,21 +81,33 @@ class TaxableTx(BaseTx):
             **close_fair_value_entry,
             **close_base_config,
             'quantity': 0,  # intentionally 0, if overwritten will affect quantity which is not wanted
-            'value': change_val,
+            'value': -change_val,
         }
         all_entries.append(self.create_entry(**close_cost_basis_entry))
         all_entries.append(self.create_entry(**close_fair_value_entry))
+
+
         # 3. Move gains (use same value as fair value entry uses)
-        for entry in self.gain_entries:
-            adj_config = {
-                **entry,
-                'mkt': asset,
-                'type': kwargs.get('type', self.type),
-                'quantity': 0,  # intentionally 0, if overwritten will affect quantity which is not wanted
-                'quote': open_price,
-                'close_quote': tx_asset.usd_price,
-                'value': change_val,
-            }
-            all_entries.append(self.create_entry(**adj_config))
+        close_unrealized_entry = self.gain_entries[0]
+        close_realized_entry = self.gain_entries[1]
+        close_gain_config = {
+            'mkt': asset,
+            'type': kwargs.get('type', self.type),
+            'quantity': 0,  # intentionally 0, if overwritten will affect quantity which is not wanted
+            'quote': open_price,
+            'close_quote': tx_asset.usd_price,
+        }
+        close_unrealized_entry = {
+            **close_unrealized_entry,
+            **close_gain_config,
+            'value': -change_val,
+        }
+        close_realized_entry = {
+            **close_realized_entry,
+            **close_gain_config,
+            'value': change_val,
+        }
+        all_entries.append(self.create_entry(**close_unrealized_entry))
+        all_entries.append(self.create_entry(**close_realized_entry))
 
         return all_entries

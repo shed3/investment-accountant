@@ -19,10 +19,10 @@ class Entry:
         self.quote = kwargs.get('quote', 0)
         self.close_quote = kwargs.get('close_quote', 0)
 
-        # if self.quantity < 0 or self.value < 0:
-        #     self.side = 'debit' if self.side == 'credit' else 'credit'
-        #     self.quantity = abs(self.quantity)
-        #     self.value = abs(self.value)
+        if self.quantity < 0 or self.value < 0:
+            self.side = 'debit' if self.side == 'credit' else 'credit'
+            self.quantity = abs(self.quantity)
+            self.value = abs(self.value)
 
         # if self.quantity <= 0 or self.value <= 0:
         #     self.quantity = abs(self.quantity)

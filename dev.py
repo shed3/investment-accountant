@@ -9,7 +9,7 @@ from decimal import Decimal
 from tests.fixtures import Fixes
 from src.crypto_accountant.bookkeeper import BookKeeper
 
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "DEBUG"))
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 log = logging.getLogger(__name__)
 
 
@@ -22,12 +22,18 @@ pd.set_option("display.min_rows", 100)
 pd.set_option("display.max_columns", 8)
 
 # Hardcoded transactions
-# txs = TxnFactory.hardcoded_txs()
+txs = TxnFactory.hardcoded_txs()
+# --- get symbols from hardcodes tx ---
+symbols = ["BTC", "ETH"]
 
-# Firebase Transactions
-firestore_cred_file = Fixes.firestore_cred_file(Fixes.storage_dir())
-firestore_ref = Fixes.firestore_ref(firestore_cred_file)
-txs = Fixes.firestore_user_transactions(firestore_ref)
+# # # Firebase Transactions
+# firestore_cred_file = Fixes.firestore_cred_file(Fixes.storage_dir())
+# firestore_ref = Fixes.firestore_ref(firestore_cred_file)
+# txs = Fixes.firestore_user_transactions(firestore_ref)
+# # --- get symbols from firebase tx ---
+# base_symbols = list([x['baseCurrency'] for x in txs])
+# quote_symbols = list([x['quoteCurrency'] for x in txs if "quoteCurrency" in x.keys()])
+# symbols = set(base_symbols+quote_symbols)
 
 # Pystore historical data
 pystore.set_path("/Volumes/CAPA/.storage")
@@ -63,33 +69,31 @@ def get_change_df(historical_df):
 
 start = datetime.now()
 
-# --- get symbols from firebase tx ---
-base_symbols = list([x['baseCurrency'] for x in txs])
-quote_symbols = list([x['quoteCurrency'] for x in txs if "quoteCurrency" in x.keys()])
-symbols = set(base_symbols+quote_symbols)
 
-# --- get symbols from hardcodes tx ---
-# symbols = ["BTC", "ETH"]
 
 historical = get_historical_df(symbols)
 log.info("Loaded historical data")
-
 # initialize bookkeeper
 bk = BookKeeper()
 bk.add_historical_data(historical)
-bk.add_txs(txs, auto_detect=True)
+bk.add_txs(txs, auto_detect=False)
 
 # eq_curve = bk.ledger.generate_equity_curve(['account_type', 'symbol'], 'balance_quantity')['assets']
 # print('###########EQUITY CURVE##############')
 # print(eq_curve)
 
 journals = bk.ledger.all_account_journals
-btc_timeseries = bk.ledger.account_balances_timeseries['assets', 'current_assets', 'adj_fair_value', 'BTC']
-btc_balances = bk.ledger.account_balances['BTC']
+btc_balances_timeseries = bk.ledger.account_balances_timeseries['assets', 'current_assets', 'adj_fair_value', 'BTC']
+balances_timeseries = bk.ledger.account_balances_timeseries
+balances = bk.ledger.account_balances
+btc_balances = balances['BTC']
 print('###########ACCOUNT JOURNALS##############')
-# print(journals)
-print(len(journals))
-print(btc_balances)
+# print(bk.ledger.simple)
+print(journals)
+# print(len(journals))
+print(balances_timeseries)
+print(balances)
+# print(btc_balances)
 
 
 # multiply qty df with price df and then sum them all into total

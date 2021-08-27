@@ -31,22 +31,6 @@ def query_df(df, col, val):
     return df.loc[df[col] == val]
 
 
-def dict_to_string(d, indent=0):
-    pval = ''
-    for key, value in d.items():
-        val1 = ('\t' * indent + str(key))
-        pval += val1
-        pval += '\n'
-        if isinstance(value, str):
-            val2 = ('\t' * (indent+1) + str(value))
-        elif isinstance(value, dict):
-            val2 = dict_to_string(value, indent+1)            
-        else:
-            val2 = dict_to_string(value.__dict__, indent+1)
-        pval += val2
-        return pval
-
-
 def set_precision(val, precision):
     fmt_str = ':.{}f'.format(precision)
     fmt_str = '{' + fmt_str + '}'
