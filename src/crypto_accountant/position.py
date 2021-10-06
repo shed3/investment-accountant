@@ -5,13 +5,19 @@ import pytz
 utc=pytz.UTC
 class Position:
 
-    def __init__(self, symbol) -> None:
+    def __init__(self, symbol, **kwargs) -> None:
         self.symbol = symbol
         self._opens = {}
         self._closes = {}
         self.stats = {'open': {}, 'close': {}}
         self.mkt_price = 0
         self.mkt_timestamp = None
+        self.tax_rates = {
+            'long': set_precision(kwargs.get('tax_rate_long', .25), 2),
+            'short': set_precision(kwargs.get('tax_rate_short', .4), 2)
+        }
+
+    ####### PROPERTIES #######
 
     @property
     def balance(self):
@@ -40,8 +46,8 @@ class Position:
             if lot['available_qty'] > 0:
                 new_lot = {**lot}
                 new_lot['id'] = id
-                new_lot['qty'] = new_lot['available_qty']
-                del new_lot['available_qty']
+                # new_lot['qty'] = new_lot['available_qty']
+                # del new_lot['available_qty']
                 open_lots.append(new_lot)
         return open_lots
 
@@ -57,6 +63,64 @@ class Position:
     def unrealized_gain(self):
         return sum(list([(lambda x: x['unrealized_gain'])(x) for x in list(self._opens.values())]))
 
+
+    ####### INTERFACE METHODS #######
+
+    def open(self, id, price, timestamp, qty):
+        # add entry to opens and update open_stats
+        timestamp = timestamp.replace(tzinfo=utc)
+        self._opens[id] = {
+            'timestamp': timestamp,
+            'price': price,
+            'qty': qty,
+            'available_qty': qty,
+            'unrealized_gain': set_precision(0, 18),
+            'term': 'short'
+        }
+        self._update_stats('open', price, timestamp)
+
+    def close(self, id, price, timestamp, qty):
+        # record close event
+        self._closes[id] = {
+            'timestamp': timestamp.replace(tzinfo=utc),
+            'price': price,
+            'qty': qty,
+            'realized_gain': set_precision(0, 18)
+        }
+
+        open_lots = self.open_tax_lots.copy()
+        for lot in open_lots:
+            lot['tax_liability'] = lot['unrealized_gain'] * self.tax_rates[lot['term']]
+        lots = sorted(open_lots, key=lambda x: x['tax_liability'], reverse=True)
+
+        # Loop through open tax lots (sorted by tax liability) until filled
+        # At each tax lot, use fillable qty => all available qty or qty needed to fill order
+        # Create credit entries from tx
+        filled_qty = 0  # tracks qty filled from open tax lots
+        tax_lot_usage = []
+        while filled_qty < qty and len(lots) > 0:
+            current_lot = lots[0]
+            lot_available_qty = current_lot['available_qty']
+            lot_price = current_lot['price']
+
+            unfilled_qty = qty - filled_qty
+            fillable_qty = unfilled_qty if lot_available_qty > unfilled_qty else lot_available_qty
+
+            # partially or fully close position's available_qty
+            self._opens[current_lot['id']]['available_qty'] -= fillable_qty
+
+            # increment close event's realized gain
+            self._closes[id]['realized_gain'] += fillable_qty * price
+
+            # update lot usage and filled qty before removing current tax lot from list
+            tax_lot_usage.append((lot_price, fillable_qty))
+            filled_qty += fillable_qty
+            del lots[0]
+
+        self._update_stats('close', price, timestamp)
+        return tax_lot_usage
+
+    ####### HELPER METHODS #######
 
     def adjust_to_mtk(self, price, timestamp):
         self.mkt_price = price
@@ -88,59 +152,7 @@ class Position:
             self.stats[name]['last'] = price
         self.adjust_to_mtk(price, timestamp)
 
-    def add(self, id, price, timestamp, qty):
-        # add entry to opens and update open_stats
-        timestamp = timestamp.replace(tzinfo=utc)
-        self._opens[id] = {
-            'timestamp': timestamp,
-            'price': price,
-            'qty': qty,
-            'available_qty': qty,
-            'unrealized_gain': set_precision(0, 18),
-            'term': 'short'
-        }
-        self._update_stats('open', price, timestamp)
+    
 
-    def close(self, id, price, timestamp, config=None, fill_quantity=None):
-
-        # attempt to create default tax lot fill order based on FIFO
-        if not config:
-            if fill_quantity != None:
-                config = {}
-                filled = 0
-                for tax_lot in self.open_tax_lots:
-                    if filled < fill_quantity:
-                        config[tax_lot['id']] = tax_lot['qty']
-                        filled += tax_lot['qty']
-            else:
-                raise Exception("Must provide fill_quantity if config is not provided.")
-
-        # add entry to closes and update close_stats
-        timestamp = timestamp.replace(tzinfo=utc)
-        qty =  sum(list([x for x in list(config.values())]))
-        self._closes[id] = {
-            'timestamp': timestamp,
-            'price': price,
-            'qty': qty,
-            'realized_gain': set_precision(0, 18)
-        }
-
-        # update available quantities
-        # config = {id1: qty1, id2: qty2}
-        for config_id, config_qty in config.items():
-            entry = self._opens.get(config_id, None)
-            if entry:
-                close_qty = config_qty
-                if entry['available_qty'] >= config_qty:
-                    self._opens[config_id]['available_qty'] -= close_qty
-                else:
-                    self._opens[config_id]['available_qty'] = set_precision(0, 18)
-                    close_qty = self._opens[config_id]['available_qty']
-
-                self._closes[id]['realized_gain'] += close_qty * price
-            else:
-                raise Exception('No matching entry found for', id)
-        
-        self._update_stats('close', price, timestamp)
         
 

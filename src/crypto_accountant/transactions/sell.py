@@ -1,25 +1,28 @@
 from .taxable import TaxableTx
 from .entry_config import CRYPTO, CASH
 
-debit_quote_entry = {'side': "debit", 'mkt': 'quote', **CASH}
-credit_base_entry = {'side': "credit", 'mkt': 'base', **CRYPTO}
+# debit_quote_entry = {'side': "debit", 'mkt': 'quote', **CASH}
+# credit_base_entry = {'side': "credit", 'mkt': 'base', **CRYPTO}
 
-entry_template = {
-    'debit': debit_quote_entry,
-    'credit': credit_base_entry
-}
+# entry_template = {
+#     'debit': debit_quote_entry,
+#     'credit': credit_base_entry
+# }
 
 class Sell(TaxableTx):
 
     def __init__(self, **kwargs) -> None:
         kwargs['type'] = 'sell'
-        super().__init__(entry_template=entry_template.copy(), **kwargs)
-        
-        # if base asset isnt stable add to taxable assets
-        if not self.assets['base'].is_fiat and not self.assets['base'].is_stable:
-            self.add_taxable_asset('base', entry_template)
+        super().__init__(**kwargs)
 
-    def get_affected_balances(self):
+        # set entry templates
+        self.entry_templates["base"] = {'side': "credit", **CRYPTO}
+        self.entry_templates["quote"] = {'side': "debit", 'mkt': 'quote', **CASH}
+
+        # DO NOT OVERWRITE: must append to prevent possibly losing taxable fee
+        self.taxable_assets.append("base")
+        
+    def affected_balances(self):
         affected_balances = {}
         base = self.assets['base']
         quote = self.assets['quote']

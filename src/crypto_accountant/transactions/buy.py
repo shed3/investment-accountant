@@ -1,20 +1,24 @@
 from .taxable import TaxableTx
 from .entry_config import CRYPTO, CASH
 
-debit_base_entry = {'side': "debit", **CRYPTO}
-credit_quote_entry = {'side': "credit", 'mkt': 'quote', **CASH}
-entry_template = {
-    'debit': debit_base_entry,
-    'credit': credit_quote_entry
-}
+# debit_base_entry = {'side': "debit", **CRYPTO}
+# credit_quote_entry = {'side': "credit", 'mkt': 'quote', **CASH}
+# entry_template = {
+#     'debit': debit_base_entry,
+#     'credit': credit_quote_entry
+# }
 
 class Buy(TaxableTx):
 
     def __init__(self, **kwargs) -> None:
         kwargs['type'] = 'buy'
-        super().__init__(entry_template=entry_template.copy(), **kwargs)
+        super().__init__(**kwargs)
+        
+        # set entry templates
+        self.entry_templates["base"] = {'side': "debit", **CRYPTO}
+        self.entry_templates["quote"] = {'side': "credit", 'mkt': 'quote', **CASH}
 
-    def get_affected_balances(self):
+    def affected_balances(self):
         affected_balances = {}
         base = self.assets['base']
         quote = self.assets['quote']

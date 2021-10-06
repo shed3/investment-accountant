@@ -22,21 +22,23 @@ pd.set_option("display.min_rows", 100)
 pd.set_option("display.max_columns", 8)
 
 # Hardcoded transactions
-txs = TxnFactory.hardcoded_txs()
-# --- get symbols from hardcodes tx ---
-symbols = ["BTC", "ETH"]
+# txs = TxnFactory.hardcoded_txs()
+# # --- get symbols from hardcodes tx ---
+# symbols = ["BTC", "ETH"]
 
-# # # Firebase Transactions
+# # Firebase Transactions
 # firestore_cred_file = Fixes.firestore_cred_file(Fixes.storage_dir())
-# firestore_ref = Fixes.firestore_ref(firestore_cred_file)
-# txs = Fixes.firestore_user_transactions(firestore_ref)
-# # --- get symbols from firebase tx ---
-# base_symbols = list([x['baseCurrency'] for x in txs])
-# quote_symbols = list([x['quoteCurrency'] for x in txs if "quoteCurrency" in x.keys()])
-# symbols = set(base_symbols+quote_symbols)
+firestore_cred_file = "/Users/rileystephens/Development/Crypto/crypto_accountant/serviceAccount.json"
+firestore_ref = Fixes.firestore_ref(firestore_cred_file)
+txs = Fixes.firestore_user_transactions(firestore_ref)
+# --- get symbols from firebase tx ---
+base_symbols = list([x['baseCurrency'] for x in txs])
+quote_symbols = list([x['quoteCurrency'] for x in txs if "quoteCurrency" in x.keys()])
+symbols = set(base_symbols+quote_symbols)
 
+print(symbols)
 # Pystore historical data
-pystore.set_path("/Volumes/CAPA/.storage")
+pystore.set_path("/Users/rileystephens/Development/Crypto/HistoricalPrices/.storage")
 store = pystore.store("messari")
 historical_prices = store.collection('price')
 
@@ -74,9 +76,9 @@ start = datetime.now()
 historical = get_historical_df(symbols)
 log.info("Loaded historical data")
 # initialize bookkeeper
-bk = BookKeeper()
-bk.add_historical_data(historical)
-bk.add_txs(txs, auto_detect=False)
+bk = BookKeeper(interval="30")
+bk.import_prices(historical)
+bk.import_txs(txs, auto_detect=True)
 
 # eq_curve = bk.ledger.generate_equity_curve(['account_type', 'symbol'], 'balance_quantity')['assets']
 # print('###########EQUITY CURVE##############')
@@ -89,11 +91,11 @@ balances = bk.ledger.account_balances
 btc_balances = balances['BTC']
 print('###########ACCOUNT JOURNALS##############')
 # print(bk.ledger.simple)
-print(journals)
+# print(btc_balances_timeseries)
 # print(len(journals))
-print(balances_timeseries)
+# print(balances_timeseries)
 print(balances)
-# print(btc_balances)
+print(btc_balances)
 
 
 # multiply qty df with price df and then sum them all into total

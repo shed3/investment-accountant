@@ -1,3 +1,127 @@
+"""
+The Bookkeeper manages the process of converting real word transactions to entries on the general ledger.
+
+This means that the Bookkeeper must implements and enforce the interfaces between Transactions, Entries,
+Positions, and the Ledger
+
+Things to keep in mind:
+ * Who/What is the source of truth and for what?
+ * What pieces of data do classes ACTUALLY need to know to carry out their functions?
+
+--- Entry ---
+
+    - Required fields:
+        * id
+        * account_type
+        * account
+        * sub_account
+        * timestamp
+        * symbol
+        * side
+        * type
+        * quantity
+        * value
+        * quote
+        * close_quote
+ 
+    - Created by: Transactions or Bookkeeper (for adjusting)
+    - Verified by: Bookkeeper and Ledger (really should be one or the other)
+    - Used by: Ledger
+
+    * The decimal precision for quantity, value, quote, and close_quote
+
+--- Transaction ---
+    The Transaction interface is two fold - dict and class instance
+
+    ## Dict ##
+        - Required fields:
+        * id
+        * timestamp
+        * type
+        * base_currency
+        * base_quantity
+        * base_usd_price
+
+        - Supported fields:
+        * quote_currency
+        * quote_quantity
+        * quote_usd_price
+        * fee_currency
+        * fee_quantity
+        * fee_usd_price
+
+        * This schema is needed for transaction type detection
+        * Additional fields may require class implementation
+
+    ## Tx Class ##
+        - affected_balances()
+        * (Return) quantity gained or lost of each asset in transaction. Format: {symbol: +/- qty}
+        * (Interface) This is how a transaction can plainly communicate its effect on asset positions
+
+        - entries()
+        * By default uses entry_template values to create set of entries detailing tx's effect on accounts
+        * Can be overwritten or passed templates args to create a non standard entry set
+        * Needs a way to know
+        * (Return) all entries except those that will be generated from process_taxable
+        * (Interface) This is how a transaction can communicate its effect on the general ledger
+
+        - closing_entries({asset_position: [(price, qty)]})
+        * Applies to taxable transacions ONLY
+        * (Accept) Dict of asset_positions (base, quote or fee) to close, each with a list of price and quantity tuples. Format: {asset_position: [(price, qty), ...]}
+        * (Return) List of Entry instances that comply with Entry interface
+        * (Interface) This is how a taxable transaction works with positions to communicate its tax implications
+
+--- Position ---
+    A position is responsible for maintaining tax lot availability for a certain asset. 
+    
+    (Source of Truth)
+    - Current market price of asset 
+    - Current tax lot availability
+    * Note current refers to the timestamp of the entry most recently added to the ledger
+
+    - open(id, price, timestamp, qty)
+    * create new tax lot with data from args
+
+    - close(price, timestamp, qty)
+    * record position closing event with data from args
+    * Iterate through list of open tax lots sorted by tax liability decreasing lots' available qty and increasing close event's realized gains (repeat until filled)
+    * (Return) List of tuples containing (price, qty) info of lots closed out off. Format: [(price, qty), ...]
+
+--- Ledger ---
+    A ledger is responsible for type checking/acceping entries.
+
+    (Source of Truth)
+    - Historical account balances (qty & usd value)
+
+    - add(entry)
+    * Validate that entry implements Entry interface then add to entry set (or reject)
+
+--- Bookkeeper ----
+    A Bookkeeper can
+     * accept transaction -> update assets' position -> gets entries from tx -> create adjusting entries for affected positions -> record tx and adjusting entries on ledger
+     * accept new price -> update assets' position -> create adjusting entries for asset positions -> record adjusting entries on ledger
+
+     - import_prices(prices)
+     * load in historical asset prices (EOD)
+     * (Accept) df of df formatted dict of asset prices. Format: Dataframe or {symbol: []}
+
+
+     - record_price(price, timestamp, symbol)
+     * create adjusting entries for asset positions and update historical prices
+
+     - import_txs(txs)
+     * load in historical transacations and add them to ledger
+     * generally requires historical data to function properly
+     * (Accept) List of class instances or dicts that implement the Transaction interface
+
+     - record_tx(tx)
+     * gets entries from tx and adds them to ledger
+     * calls record_price() for asset prices
+     * (Accept) Class instances or dict that implement the Transaction interface
+     * (Interface) Responsible for acccepting/rejecting txs based on proper Tx interface implementation and Tx's Entry interfaces implementation
+
+"""
+
 import logging
 import re
 import pytz
@@ -41,69 +165,89 @@ class BookKeeper:
         self.interval = interval
         self.periods = []
         self.current_period_index = 0
-        self.historical_data = None
+        self.historical_prices = None
 
-    def detect_type(self, tx):
-        # if auto detect is allowed and the tx arg isnt already some form of BaseTx
-        # create an instance of the correct tx class based on tx data
-        if not isinstance(tx, BaseTx):
-            type = tx.get('type', 'other')
-            args = {}
-            for key, value in tx.items():
-                key = key.replace('-', '_')
-                key = key.replace(' ', '_')
-                key_pieces = re.findall('[A-Za-z][^A-Z]*', key)
-                key = '_'.join(key_pieces)
-                key = key.replace('__', '_')
-                key = key.lower()
-                if key in ['tx_type', 'txn_type', 'type', 'trans_type', 'transaction_type']:
-                    tx_type = value
-                    args['type'] = tx_type
-                elif key in ['timestamp', 'time', 'date', 'time_stamp']:
-                    args['timestamp'] = value
-                else:
-                    args[key] = value
+    ####### INTERFACE METHODS #######
 
-            if 'type' in args.keys():
-                type = args['type']
-                if type == 'deposit':
-                    return Deposit(**args)
-                elif type == 'withdrawal':
-                    return Withdrawal(**args)
-                elif type == 'buy':
-                    return Buy(**args)
-                elif type == 'sell':
-                    return Sell(**args)
-                elif type == 'swap':
-                    return Swap(**args)
-                elif type == 'send':
-                    return Send(**args)
-                elif type == 'receive':
-                    return Receive(**args)
-                elif type == 'reward':
-                    return Reward(**args)
-                elif type == 'interest-in-stake':
-                    return InterestInStake(**args)
-                elif type == 'interest-in-account':
-                    return InterestInAccount(**args)
-                # elif type == 'interest_in':
-                    # return InterestInAccount(**args)
-                else:
-                    raise Exception('TYPE {} NOT CREATED'.format(type))
-
-        return tx
-
-    def add_historical_data(self, data):
+    def import_prices(self, prices):
         """Set bookkeeper's historical data frame
         *Will require specifically formatted dataframe
 
         Args:
-            data ([type]): [description]
+            prices (pd.Dataframe): Historical prices data
         """
-        data.index = data.index.tz_localize(tz='UTC').ceil(self.interval + self.freq)
-        self.historical_data = data
+        prices.index = prices.index.tz_localize(tz='UTC').ceil(self.interval + self.freq)
+        self.historical_prices = prices
 
-    def _add_prechecks(self, tx):
+    def record_price(self, timestamp, symbol, price):
+        pass
+    
+    def import_txs(self, txs, auto_detect=True):
+        if auto_detect:
+            transactions = sorted(txs, key=lambda x: dict(x).get('timestamp'))
+        else:
+            transactions = sorted(txs, key=lambda x: x.timestamp)
+        for tx in transactions:
+            self.record_tx(tx, auto_detect)
+
+    def record_tx(self, tx, auto_detect):
+
+        # attempted to instanciate transaction class from tx dict
+        if auto_detect:
+            tx = self.detect_type(tx)
+        
+        # set period date list
+        if len(self.periods) < 1:
+            self.interpolate_date_range((tx))
+
+        # tx occured after current period close date -> close periods
+        if tx.timestamp > self.periods[self.current_period_index]:
+            self.close_periods(tx.timestamp)
+
+        # checks that positions are initialized and market prices are updated
+        self.update_positions(tx)
+
+        # adjust positions of affected assets
+        affected_positions = tx.affected_balances()
+        for symbol, qty in affected_positions.items():
+            position, asset = list([[key, val] for key, val in tx.assets.items() if val.symbol == symbol])[0]
+            if qty > 0:
+                # open a new position with asset info
+                self.positions[symbol].open(tx.id, asset.usd_price, tx.timestamp, qty)
+            elif hasattr(tx, 'taxable_assets') and position not in tx.taxable_assets:
+                # close out position the affected amount
+                self.positions[symbol].close(tx.id, asset.usd_price, tx.timestamp, qty)
+
+        # get base entries
+        entries = tx.entries()
+
+        # create closing entries for
+        if hasattr(tx, 'taxable_assets'):
+            closing_templates = {}
+            for taxable_asset in tx.taxable_assets:
+                # sort all open tax lots for tx's base currency position
+                asset = tx.assets[taxable_asset]
+                symbol = asset.symbol
+                position = self.positions[symbol]
+                closing_templates[taxable_asset] = position.close(tx.id, asset.usd_price, tx.timestamp, asset.quantity)
+            entries += tx.closing_entries(closing_templates)
+
+        # Entry validation checks
+        entry_dicts = list([x.to_dict() for x in entries])
+        entry_check = self.validate_entry_set(entry_dicts)
+        if not entry_check['valid']:
+            log.debug(entry_check)
+
+        # add new tx's entries to ledger
+        for entry in entries:
+            self.ledger.add_entry(entry.to_dict())
+
+
+    ####### HELPER METHODS #######
+
+    
+
+    def update_positions(self, tx):
         # create position from base_currency if needed
         if tx.assets['base'].symbol not in self.positions:
             self.positions[tx.assets['base'].symbol] = Position(
@@ -123,6 +267,8 @@ class BookKeeper:
         for asset in tx.assets.values():
             self.positions[asset.symbol].adjust_to_mtk(asset.usd_price, tx.timestamp)
 
+    def interpolate_date_range(self, tx):
+        # create list of dates that represent start and end times of periods
         if len(self.periods) < 1:
             start = tx.timestamp
             end = pd.Timestamp.now(tz=utc)
@@ -141,7 +287,7 @@ class BookKeeper:
         Returns:
             [type]: [description]
         """
-        return set_precision(self.historical_data.at[timestamp.ceil(self.interval + self.freq), symbol], 18)
+        return set_precision(self.historical_prices.at[timestamp.ceil(self.interval + self.freq), symbol], 18)
 
     def get_period_entries(self):
         """Returns entries that close out current period
@@ -160,15 +306,15 @@ class BookKeeper:
             timestamp = self.periods[self.current_period_index]
             curr_price = self.get_price(timestamp, symbol)
             all_entries += self.create_adjusting_entries(symbol, curr_price, timestamp)
+            self.positions[symbol].adjust_to_mtk(curr_price, timestamp)
         return all_entries
 
     def create_adjusting_entries(self, symbol, curr_price, timestamp):
         adj_entries = []
         position = self.positions[symbol]
         change_price = curr_price - position.mkt_price
-        self.positions[symbol].adjust_to_mtk(curr_price, timestamp)
         for tax_lot in position.open_tax_lots:
-            change_val = tax_lot['qty'] * change_price
+            change_val = tax_lot['available_qty'] * change_price
             if change_val != 0:
                 for entry in adj_to_fair_value_entries:
                     adj_config = {
@@ -198,64 +344,20 @@ class BookKeeper:
             num_periods = period_timedelta.days
         elif self.freq == "W":
             num_periods = period_timedelta.weeks
+        elif self.freq == "M":
+            num_periods = period_timedelta.months
+        elif self.freq == "Y":
+            num_periods = period_timedelta.months
 
         closing_entries = []
         # close all past periods
-        for x in range(num_periods + 1):
+        for x in range(num_periods):
             period_entries = self.get_period_entries()
             closing_entries += period_entries
             self.current_period_index += 1
         if len(closing_entries) > 0:
             for entry in closing_entries:
                 self.ledger.add_entry(entry.to_dict())
-
-    def add_txs(self, txs, auto_detect=True):
-        if auto_detect:
-            transactions = sorted(txs, key=lambda x: dict(x).get('timestamp'))
-        else:
-            transactions = sorted(txs, key=lambda x: x.timestamp)
-        for tx in transactions:
-            self.add_tx(tx, auto_detect)
-
-    def add_tx(self, tx, auto_detect=True):
-        if auto_detect:
-            tx = self.detect_type(tx)
-
-        # checks that positions are initialized and periods have been created
-        self._add_prechecks(tx)
-
-        # tx occured after current period close date -> close periods
-        if tx.timestamp > self.periods[self.current_period_index]:
-            self.close_periods(tx.timestamp)
-
-        if tx.taxable:
-            entries = self.process_taxable(tx)
-        else:
-            entries = tx.get_entries()
-            # need to close non taxable positions here?
-
-        affected_positions = tx.get_affected_balances()
-        for symbol, qty in affected_positions.items():
-            position, asset = list([[key, val] for key, val in tx.assets.items()
-                             if val.symbol == symbol])[0]
-            if qty > 0:
-                # add tx to debit assets to positions
-                self.positions[symbol].add(
-                    tx.id, asset.usd_price, tx.timestamp, asset.quantity)
-            elif getattr(tx, 'taxable_assets', False):
-                if position not in tx.taxable_assets.keys():
-                    self.positions[symbol].close(tx.id, asset.usd_price, tx.timestamp, fill_quantity=-qty)
-
-
-        # Entry validation checks
-        entry_dicts = list([x.to_dict() for x in entries])
-        entry_check = self.validate_entry_set(entry_dicts)
-        if not entry_check['valid']:
-            log.debug(entry_check)
-
-        # add new tx's entries to ledger
-        for entry in entries:
-            self.ledger.add_entry(entry.to_dict())
 
     def validate_entry_set(self, entries):
         """
@@ -360,59 +462,53 @@ class BookKeeper:
 
         return {'valid': True}
 
-    def process_taxable(self, tx):
+    def detect_type(self, tx):
+        # if auto detect is allowed and the tx arg isnt already some form of BaseTx
+        # create an instance of the correct tx class based on tx data
+        if not isinstance(tx, BaseTx):
+            type = tx.get('type', 'other')
+            args = {}
+            for key, value in tx.items():
+                key = key.replace('-', '_')
+                key = key.replace(' ', '_')
+                key_pieces = re.findall('[A-Za-z][^A-Z]*', key)
+                key = '_'.join(key_pieces)
+                key = key.replace('__', '_')
+                key = key.lower()
+                if key in ['tx_type', 'txn_type', 'type', 'trans_type', 'transaction_type']:
+                    tx_type = value
+                    args['type'] = tx_type
+                elif key in ['timestamp', 'time', 'date', 'time_stamp']:
+                    args['timestamp'] = value
+                else:
+                    args[key] = value
 
-        # check if tx has fee and isnt taxable
-        if 'fee' not in tx.taxable_assets.keys() and len(tx.taxable_assets.keys()) > 0:
-            # fee isnt in taxable assets so just overwrite entry config
-            entries = tx.get_entries(
-                config={'debit': tx.entry_template['debit']})
-        elif len(tx.taxable_assets.keys()) == 1:
-            # the fee is the only taxable asset
-            entries = tx.get_entries()
-        else:
-            # base or quote as well as fee are in taxable assets so just get debit entries
-            entries = tx.generate_debit_entry()
+            if 'type' in args.keys():
+                type = args['type']
+                if type == 'deposit':
+                    return Deposit(**args)
+                elif type == 'withdrawal':
+                    return Withdrawal(**args)
+                elif type == 'buy':
+                    return Buy(**args)
+                elif type == 'sell':
+                    return Sell(**args)
+                elif type == 'swap':
+                    return Swap(**args)
+                elif type == 'send':
+                    return Send(**args)
+                elif type == 'receive':
+                    return Receive(**args)
+                elif type == 'reward':
+                    return Reward(**args)
+                elif type == 'interest-in-stake':
+                    return InterestInStake(**args)
+                elif type == 'interest-in-account':
+                    return InterestInAccount(**args)
+                # elif type == 'interest_in':
+                    # return InterestInAccount(**args)
+                else:
+                    raise Exception('TYPE {} NOT CREATED'.format(type))
 
-        for taxable_asset in tx.taxable_assets.keys():
-            # sort all open tax lots for tx's base currency position
-            position = self.positions[tx.assets[taxable_asset].symbol]
+        return tx
 
-            open_lots = position.open_tax_lots.copy()
-
-            for lot in open_lots:
-                lot['tax_liability'] = lot['unrealized_gain'] * \
-                    self.tax_rates[lot['term']]
-            lots = sorted(
-                open_lots, key=lambda x: x['tax_liability'], reverse=True)
-
-            tx_type = tx.type if taxable_asset != 'fee' else 'fee'
-            # Loop through open tax lots (sorted by tax liability) until filled
-            # At each tax lot, use fillable qty => all available qty or qty needed to fill order
-            # Create credit entries from tx
-            qty = tx.assets[taxable_asset].quantity
-            filled_qty = 0  # tracks qty filled from open tax lots
-            tax_lot_usage = {}
-
-            while filled_qty < qty and len(lots) > 0:
-                current_lot = lots[0]
-                lot_available_qty = current_lot['qty']
-                lot_price = current_lot['price']
-
-                unfilled_qty = qty - filled_qty
-                fillable_qty = unfilled_qty if lot_available_qty > unfilled_qty else lot_available_qty
-
-                # partially or fully close position
-                tax_lot_usage = {}
-                tax_lot_usage[current_lot['id']] = fillable_qty
-
-                position.close(tx.id, tx.assets[taxable_asset].usd_price, tx.timestamp, tax_lot_usage)
-
-                closing_entries = tx.generate_credit_entries(
-                    taxable_asset, lot_price, fillable_qty, type=tx_type)
-
-                entries += closing_entries
-                filled_qty += fillable_qty
-                del lots[0]
-
-        return entries
