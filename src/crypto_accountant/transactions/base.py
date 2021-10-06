@@ -9,9 +9,9 @@ incoming/outgoing and provide a simple interface for describing the credits and 
 This allows for tracking higher level positions outside the scope of a tx.
 """
 
-from .components.asset import Asset
-from .components.entry import Entry
-from .entry_config import FEES_PAID, CASH, CRYPTO
+from components.asset import Asset
+from components.entry import Entry
+from entry_config import FEES_PAID, CASH, CRYPTO
 
 debit_fee_entry = {'side': "debit", 'mkt': 'fee', **FEES_PAID}
 credit_fee_entry = {'side': "credit", 'type': 'fee', 'mkt': 'fee', **CASH}

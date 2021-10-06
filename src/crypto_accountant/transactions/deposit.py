@@ -1,5 +1,5 @@
-from .base import BaseTx
-from .entry_config import CASH, DEPOSITS
+from base import BaseTx
+from entry_config import CASH, DEPOSITS
 
 debit_base_entry = {'side': "debit", **CASH}
 credit_base_entry = {'side': "credit",  **DEPOSITS}

@@ -1,5 +1,5 @@
-from .taxable import TaxableTx
-from .entry_config import CRYPTO, CASH
+from taxable import TaxableTx
+from entry_config import CRYPTO, CASH
 
 debit_quote_entry = {'side': "debit", 'mkt': 'quote', **CASH}
 credit_base_entry = {'side': "credit", 'taxable': True, **CRYPTO}

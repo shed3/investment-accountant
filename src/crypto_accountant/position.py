@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from .utils import check_type
+from utils import check_type
 import pytz
 utc=pytz.UTC
 class Position:

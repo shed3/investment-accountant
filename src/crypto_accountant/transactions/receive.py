@@ -1,5 +1,5 @@
-from .base import BaseTx
-from .entry_config import CRYPTO, TRANSFERS_IN
+from base import BaseTx
+from entry_config import CRYPTO, TRANSFERS_IN
 
 debit_base_entry = {'side': "debit", **CRYPTO}
 credit_base_entry = {'side': "credit",  **TRANSFERS_IN}

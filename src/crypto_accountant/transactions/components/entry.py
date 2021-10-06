@@ -1,4 +1,4 @@
-from ..utils import set_precision
+from utils import set_precision
 
 
 class Entry:

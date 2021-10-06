@@ -1,5 +1,5 @@
-from .base import BaseTx
-from .entry_config import CASH, CRYPTO, INTEREST_EARNED_STAKE
+from base import BaseTx
+from entry_config import CASH, CRYPTO, INTEREST_EARNED_STAKE
 
 debit_crypto_base_entry = {'side': "debit", **CRYPTO}
 debit_cash_base_entry = {'side': "debit", **CASH}
