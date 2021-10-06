@@ -3,7 +3,6 @@ import os
 from decimal import Decimal
 from datetime import datetime, timedelta
 import random
-from randomtimestamp.functions import randomtimestamp
 import uuid
 
 import firebase_admin
@@ -59,45 +58,45 @@ class Fixes:
                     trans[key] = val
         return sorted(all_trans, key=lambda x: x['timestamp'])
 
-    def test_simple_buy_sell():
-        short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
-        long_buy_date = randomtimestamp(start_year=2018, text=False)
-        sell_date = randomtimestamp(start=short_buy_date, text=False)
-        factory = TxnFactory()
-        buy = factory.generic_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=0)
-        sell = factory.generic_factory('sell', base_currency='btc', quote_currency='usd', timestamp=sell_date, base_usd_price=2000, quote_usd_price=1, quote_quantity=1000, taxable=True, base_quantity=.5, fee_quantity=0)
-        return [
-            buy,
-            sell,
-        ]
+    #def test_simple_buy_sell():
+#        short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
+#        long_buy_date = randomtimestamp(start_year=2018, text=False)
+#        sell_date = randomtimestamp(start=short_buy_date, text=False)
+#        factory = TxnFactory()
+#        buy = factory.generic_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=0)
+#        sell = factory.generic_factory('sell', base_currency='btc', quote_currency='usd', timestamp=sell_date, base_usd_price=2000, quote_usd_price=1, quote_quantity=1000, taxable=True, base_quantity=.5, fee_quantity=0)
+#        return [
+#            buy,
+#            sell,
+#        ]
 
-    def test_new_buy_sell():
-        short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
-        long_buy_date = randomtimestamp(start_year=2018, text=False)
-        sell_date = randomtimestamp(start=short_buy_date, text=False)
-        buy = TxnFactory.txn_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=5)
-        sell = TxnFactory.txn_factory('sell', base_currency='btc', quote_currency='usd', timestamp=sell_date, base_usd_price=2000, quote_usd_price=1, quote_quantity=1000, taxable=True, base_quantity=.5, fee_quantity=.005, fee_currency='btc', fee_usd_price=2000)
+#    def test_new_buy_sell():
+#        short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
+#        long_buy_date = randomtimestamp(start_year=2018, text=False)
+#        sell_date = randomtimestamp(start=short_buy_date, text=False)
+#        buy = TxnFactory.txn_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=5)
+#        sell = TxnFactory.txn_factory('sell', base_currency='btc', quote_currency='usd', timestamp=sell_date, base_usd_price=2000, quote_usd_price=1, quote_quantity=1000, taxable=True, base_quantity=.5, fee_quantity=.005, fee_currency='btc', fee_usd_price=2000)
 
-        return [
-            Buy(**buy.to_dict),
-            Sell(**sell.to_dict),
-        ]
+#        return [
+#            Buy(**buy.to_dict),
+#            Sell(**sell.to_dict),
+#        ]
     
-    def test_simple_swap():
-        short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
-        long_buy_date = randomtimestamp(start_year=2018, text=False)
-        sell_date = randomtimestamp(start=short_buy_date, text=False)
-        factory = TxnFactory()
-        buy = factory.generic_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=.01)
-        swap = factory.generic_factory('swap', base_currency='eth', quote_currency='btc', timestamp=sell_date, base_usd_price=2000, quote_usd_price=10000, base_quantity=1, quote_quantity=.2, fee_quantity=.01, taxable=True)
-        return [
-            buy,
-            swap,
-        ]
-        # return [
-        #     Buy(**buy),
-        #     Swap(**swap),
-        # ]
+#    def test_simple_swap():
+#        short_buy_date = randomtimestamp(start_year=datetime.now().year, text=False)
+#        long_buy_date = randomtimestamp(start_year=2018, text=False)
+#        sell_date = randomtimestamp(start=short_buy_date, text=False)
+#        factory = TxnFactory()
+#        buy = factory.generic_factory('buy', base_currency='btc', quote_currency='usd', timestamp=long_buy_date, base_usd_price=1000, quote_usd_price=1, base_quantity=1, quote_quantity=1000, fee_quantity=.01)
+#        swap = factory.generic_factory('swap', base_currency='eth', quote_currency='btc', timestamp=sell_date, base_usd_price=2000, quote_usd_price=10000, base_quantity=1, quote_quantity=.2, fee_quantity=.01, taxable=True)
+#        return [
+#            buy,
+#            swap,
+#        ]
+#         return [
+#             Buy(**buy),
+#             Swap(**swap),
+#         ]
 
     def test_sequence(qty=10):
         factory = TxnFactory()

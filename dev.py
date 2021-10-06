@@ -3,9 +3,7 @@ import os
 import logging
 import numpy as np
 import pandas as pd
-import pystore
 from decimal import Decimal
-from tests.fixtures import Fixes
 from src.crypto_accountant.bookkeeper import BookKeeper
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
